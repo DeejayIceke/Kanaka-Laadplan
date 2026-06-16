@@ -20,7 +20,7 @@ else:
 st.info(f"Geselecteerde container laadruimte: **{max_lengte} mm**")
 
 # 2. Invoer Pallets
-st.subheader("2. Vul het aantal pallets in (inclusief stapeling)")
+st.subheader("2. Vul het aantal pallets in")
 
 col1, col2, col3, col4 = st.columns(4)
 
@@ -33,13 +33,14 @@ with col3:
 with col4:
     pallets_ibc = st.number_input("Aantal IBC's (1000x1200)", min_value=0, value=0, step=1)
 
-# Handmatige opgave vloerplaatsen (want we stapelen soms 2 hoog)
+# Handmatige opgave vloerplaatsen (CP3 is 1 hoog, rest is 2 hoog gestapeld)
 st.subheader("3. Controleer de vloerplaatsen (Rijen op de grond)")
 st.write("Vul in hoeveel stapels/vloerplaatsen dit fysiek inneemt:")
 
 c1, c2, c3, c4 = st.columns(4)
 with c1:
-    vloer_cp3 = st.number_input("Vloerplaatsen CP3", min_value=0, value=int(math.ceil(pallets_cp3 / 2)) if pallets_cp3 > 0 else 0)
+    # Aangepast: CP3 deelt NIET meer door 2, want deze stapel je niet!
+    vloer_cp3 = st.number_input("Vloerplaatsen CP3", min_value=0, value=int(pallets_cp3) if pallets_cp3 > 0 else 0)
 with c2:
     vloer_cp7 = st.number_input("Vloerplaatsen CP7", min_value=0, value=int(math.ceil(pallets_cp7 / 2)) if pallets_cp7 > 0 else 0)
 with c3:
@@ -88,4 +89,6 @@ else:
 
 # Visuele weergave
 st.progress(min(max(totale_meters / max_lengte, 0.0), 1.0))
+st.write(f"Gebruikte lengte: {totale_meters} mm van de {max_lengte} mm.")
+
 st.write(f"Gebruikte lengte: {totale_meters} mm van de {max_lengte} mm.")

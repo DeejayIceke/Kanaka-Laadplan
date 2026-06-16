@@ -116,6 +116,6 @@ else:
 st.pyplot(fig)
 
 st.write(f"**Gebruikte lengte:** {totale_meters} mm van de {max_lengte} mm.")
-st.write("💡 **Legenda:** 🟦 CP3 | 🟩 CP7 | 🟪 CP7 Smal | 🟨 IBC")
-7 Smal | 🟨 IBC")
+st.write("💡 **Legenda:** [X] Blauw = CP3 | [X] Groen = CP7 | [X] Paars = CP7 Smal | [X] Geel = IBC")
+
 

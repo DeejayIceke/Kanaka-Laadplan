@@ -116,7 +116,6 @@ else:
 st.pyplot(fig)
 
 st.write(f"**Gebruikte lengte:** {totale_meters} mm van de {max_lengte} mm.")
-st.markdown("💡 **Legenda:** <span style='color:#3498db'>■</span> CP3 | <span style='color:#2ecc71'>■</span> CP7 | <span style='color:#9b59b6'>■</span> CP7 Smal | <span style='color:#f1c40f'>■</span> IBC", unsafe_allowed_html=True)
-
 st.write("💡 **Legenda:** 🟦 CP3 | 🟩 CP7 | 🟪 CP7 Smal | 🟨 IBC")
+7 Smal | 🟨 IBC")
 

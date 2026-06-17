@@ -5,16 +5,15 @@ import matplotlib.patches as patches
 
 st.set_page_config(page_title="Kaneka Visueel Laadplan", layout="wide")
 st.title("📦 Kaneka Visueel Laadplan Dashboard")
-st.write("Bereken de resterende ruimte en bekijk de visuele indeling van de container.")
+st.write("Bereken de resterende ruimte en bepaal zelf de laadvolgorde.")
 
-# 1. Container Keuze - Terug naar de 3 gevraagde basistypes
+# 1. Container Keuze - Alleen de 3 gevraagde types
 st.subheader("1. Kies het containertype")
 container_type = st.selectbox(
     "Containertype", 
     ["45ft Container", "40ft Container", "20ft Container"]
 )
 
-# De exacte binnenmaten (Breedte op 2426 mm gezet zodat IBC's naast elkaar passen)
 if container_type == "45ft Container":
     max_lengte = 13550  
     max_breedte = 2426  
@@ -27,57 +26,95 @@ else:
 
 st.info(f"Geselecteerde container laadruimte: **{max_lengte} mm** lang x **{max_breedte} mm** breed.")
 
-# 2. Invoer Pallets - Alles weer tegelijk zichtbaar naast elkaar!
-st.subheader("2. Vul het aantal pallets in")
+# Initialiseer de laadlijst in het geheugen van de app
+if "laad_volgorde_lijst" not in st.session_state:
+    st.session_state.laad_volgorde_lijst = []
+
+# Definieer de vaste productspecificaties
+product_info = {
+    "CP3": {"lengte": 1140, "breedte": 1140, "kleur": "#3498db", "stapelbaar": False},
+    "CP7": {"lengte": 1400, "breedte": 1100, "kleur": "#2ecc71", "stapelbaar": True},
+    "CP7 Smal": {"lengte": 1100, "breedte": 1400, "kleur": "#9b59b6", "stapelbaar": True},
+    "IBC": {"lengte": 1000, "breedte": 1200, "kleur": "#f1c40f", "stapelbaar": False}
+}
+
+# 2. Invoer Pallets - Alles tegelijk zichtbaar!
+st.subheader("2. Vul het aantal pallets in en bepaal de volgorde")
+st.write("Vul bij een artikel het aantal in en klik op de knop om het in de container te schuiven.")
+
 col1, col2, col3, col4 = st.columns(4)
 
 with col1:
-    pallets_cp3 = st.number_input("Aantal CP3 Pallets (1140x1140)", min_value=0, value=0, step=1)
-with col2:
-    pallets_cp7 = st.number_input("Aantal CP7 Pallets (1400x1100)", min_value=0, value=0, step=1)
-with col3:
-    pallets_cp7_smal = st.number_input("Aantal CP7 Smal (1100x1400)", min_value=0, value=0, step=1)
-with col4:
-    pallets_ibc = st.number_input("Aantal IBC's (1000x1200)", min_value=0, value=0, step=1)
+    pallets_cp3 = st.number_input("Aantal CP3 (1140x1140)", min_value=0, value=0, step=1, key="in_cp3")
+    if pallets_cp3 > 0:
+        if st.button("➕ Laad CP3 eerst/volgende", key="btn_cp3", use_container_width=True):
+            st.session_state.laad_volgorde_lijst.append({"naam": "CP3", "aantal": pallets_cp3})
+            st.rerun()
 
-# Handmatige knop om alles in één keer te wissen naar 0
-if st.button("🗑️ Wis alle velden (Reset naar 0)", type="secondary"):
+with col2:
+    pallets_cp7 = st.number_input("Aantal CP7 (1400x1100)", min_value=0, value=0, step=1, key="in_cp7")
+    if pallets_cp7 > 0:
+        if st.button("➕ Laad CP7 eerst/volgende", key="btn_cp7", use_container_width=True):
+            st.session_state.laad_volgorde_lijst.append({"naam": "CP7", "aantal": pallets_cp7})
+            st.rerun()
+
+with col3:
+    pallets_cp7_smal = st.number_input("Aantal CP7 Smal (1100x1400)", min_value=0, value=0, step=1, key="in_cp7_smal")
+    if pallets_cp7_smal > 0:
+        if st.button("➕ Laad CP7 Smal eerst/volgende", key="btn_cp7_smal", use_container_width=True):
+            st.session_state.laad_volgorde_lijst.append({"naam": "CP7 Smal", "aantal": pallets_cp7_smal})
+            st.rerun()
+
+with col4:
+    pallets_ibc = st.number_input("Aantal IBC's (1000x1200)", min_value=0, value=0, step=1, key="in_ibc")
+    if pallets_ibc > 0:
+        if st.button("➕ Laad IBC eerst/volgende", key="btn_ibc", use_container_width=True):
+            st.session_state.laad_volgorde_lijst.append({"naam": "IBC", "aantal": pallets_ibc})
+            st.rerun()
+
+# De WISKNOP die ALLES gegarandeerd reset
+st.write("---")
+if st.button("🗑️ Wis alle velden en container (Reset volledig naar 0)", type="primary", use_container_width=True):
+    st.session_state.laad_volgorde_lijst = []
+    for sleutel in ["in_cp3", "in_cp7", "in_cp7_smal", "in_ibc"]:
+        if sleutel in st.session_state:
+            st.session_state[sleutel] = 0
     st.rerun()
 
-# Vloerplaatsen bepalen (CP3 en IBC = 1 hoog, CP7 = 2 hoog)
-vloer_cp3 = int(pallets_cp3)
-vloer_cp7 = int(math.ceil(pallets_cp7 / 2))
-vloer_cp7_smal = int(math.ceil(pallets_cp7_smal / 2))
-vloer_ibc = int(pallets_ibc)
+# Toon de actuele volgorde aan de lader
+if st.session_state.laad_volgorde_lijst:
+    st.write("### 📜 Huidige laadvolgorde (van kopschot tot deur):")
+    volgorde_tekst = " -> ".join([f"**{item['aantal']}x {item['naam']}**" for item in st.session_state.laad_wachtrij if 'laad_wachtrij' in st.session_state] if 'laad_wachtrij' in st.session_state else [f"**{item['aantal']}x {item['naam']}**" for item in st.session_state.laad_volgorde_lijst])
+    st.markdown(volgorde_tekst)
 
-# Logistieke Logica (Volgorde van invoer: CP3 -> CP7 -> CP7 Smal -> IBC)
-artikelen = [
-    {"naam": "CP3", "totaal_pallets": pallets_cp3, "vloer": vloer_cp3, "lengte": 1140, "breedte": 1140, "kleur": "#3498db", "stapelbaar": False},
-    {"naam": "CP7", "totaal_pallets": pallets_cp7, "vloer": vloer_cp7, "lengte": 1400, "breedte": 1100, "kleur": "#2ecc71", "stapelbaar": True},
-    {"naam": "CP7 Smal", "totaal_pallets": pallets_cp7_smal, "vloer": vloer_cp7_smal, "lengte": 1100, "breedte": 1400, "kleur": "#9b59b6", "stapelbaar": True},
-    {"naam": "IBC", "totaal_pallets": pallets_ibc, "vloer": vloer_ibc, "lengte": 1000, "breedte": 1200, "kleur": "#f1c40f", "stapelbaar": False}
-]
-
-# Lijst opbouwen van alle individuele vloerplaatsen
+# 3. Logistieke Logica: Lijst opbouwen exact op volgorde van aanklikken
 laad_lijst = []
-for art in artikelen:
-    overgebleven_pallets = art["totaal_pallets"]
-    for i in range(art["vloer"]):
-        if art["stapelbaar"]:
+for item in st.session_state.laad_volgorde_lijst:
+    info = product_info[item["naam"]]
+    
+    if info["stapelbaar"]:
+        vloerplaatsen = int(math.ceil(item["aantal"] / 2))
+    else:
+        vloerplaatsen = int(item["aantal"])
+        
+    overgebleven_pallets = item["aantal"]
+    
+    for _ in range(vloerplaatsen):
+        if info["stapelbaar"]:
             hoogte_label = " (2H)" if overgebleven_pallets >= 2 else " (1H)"
             overgebleven_pallets -= 2
         else:
             hoogte_label = ""
             
         laad_lijst.append({
-            "naam": f"{art['naam']}{hoogte_label}", 
-            "naam_puur": art["naam"],
-            "L": art["lengte"], 
-            "B": art["breedte"], 
-            "kleur": art["kleur"]
+            "naam": f"{item['naam']}{hoogte_label}", 
+            "naam_puur": item["naam"],
+            "L": info["lengte"], 
+            "B": info["breedte"], 
+            "kleur": info["kleur"]
         })
 
-# Rijen maken op basis van de containerbreedte
+# Rijen maken op basis van de containerbreedte (behoudt de volgorde!)
 rijen = []
 tijdelijke_rij = []
 huidige_breedte_in_rij = 0
@@ -95,7 +132,7 @@ for item in laad_lijst:
 if tijdelijke_rij:
     rijen.append(tijdelijke_rij)
 
-# Teken Layout Berekening
+# 4. Teken Layout Berekening
 fig, ax = plt.subplots(figsize=(14, 4))
 ax.set_xlim(0, max_lengte)
 ax.set_ylim(0, max_breedte)
@@ -111,8 +148,6 @@ totale_meters = 0
 # Teken elke rij pallets
 for rij in rijen:
     rij_lengte = max([item["L"] for item in rij])
-    
-    # Gecorrigeerd: Kijk naar het eerste item in de rij (rij[0]) in plaats van de hele lijst
     is_alleen_cp7_smal = len(rij) == 1 and rij[0]["naam_puur"] == "CP7 Smal"
     
     for index, item in enumerate(rij):
@@ -130,15 +165,17 @@ for rij in rijen:
 
 restruimte = max_lengte - totale_meters
 
-# 3. Resultaat tonen
+# 5. Resultaat tonen
 st.subheader("3. Resultaat & Visuele Indeling")
 
-if restruimte >= 0:
-    st.success(f"Dit past! Je hebt nog {restruimte} mm over in de container.")
+if st.session_state.laad_volgorde_lijst:
+    if restruimte >= 0:
+        st.success(f"Dit past! Je hebt nog {restruimte} mm over in de container.")
+    else:
+        st.error(f"Dit past NIET! Je komt {abs(restruimte)} mm tekort.")
+
+    st.pyplot(fig)
+    st.write(f"**Gebruikte lengte:** {totale_meters} mm van de {max_lengte} mm.")
+    st.write("💡 **Legenda:** [X] Blauw = CP3 | [X] Groen = CP7 | [X] Paars = CP7 Smal | [X] Geel = IBC")
 else:
-    st.error(f"Dit past NIET! Je komt {abs(restruimte)} mm tekort.")
-
-st.pyplot(fig)
-
-st.write(f"**Gebruikte lengte:** {totale_meters} mm van de {max_lengte} mm.")
-st.write("💡 **Legenda:** [X] Blauw = CP3 | [X] Groen = CP7 | [X] Paars = CP7 Smal | [X] Geel = IBC")
+    st.info("De container is nog leeg. Vul hierboven aantallen in en klik op een 'Laad'-knop.")

@@ -74,7 +74,7 @@ if st.button("🗑️ Wis alle velden en container (Reset volledig naar 0)", typ
     st.session_state.reset_id += 1
     st.rerun()
 
-# 3. Logistieke Logica: Bouw de individuele vloerplaatsen op
+# 3. Logistieke Logica: Bouw de laadlijst op
 laad_lijst = []
 for art_naam in st.session_state.klik_volgorde:
     total_pallets = actuele_aantallen[art_naam]
@@ -113,19 +113,15 @@ x_onder = 0
 x_boven = 0
 ibc_paar_teller = 0
 
-# We gebruiken een index-loop om handmatig door de laadlijst te springen
 idx = 0
 while idx < len(laad_lijst):
     item = laad_lijst[idx]
     
-    # Check of we IBC's moeten vlechten in een smalle container (2350 mm)
     if max_breedte == 2350 and item["naam_puur"] == "IBC":
-        # CRUCIALE FIX: Kijk of er nog een TWEEDE IBC beschikbaar is in de lijst
         heeft_partner = (idx + 1 < len(laad_lijst) and laad_lijst[idx+1]["naam_puur"] == "IBC")
         
         if heeft_partner:
             if ibc_paar_teller % 2 == 0:
-                # Type A paar: Onderkant Breed, Bovenkant Lang
                 x_pos_onder = max(x_onder, x_boven) if ibc_paar_teller == 0 else x_onder
                 rect1 = patches.Rectangle((x_pos_onder, 20), 1000, 1200, linewidth=1, edgecolor='white', facecolor=item["kleur"], alpha=0.8)
                 ax.add_patch(rect1)
@@ -139,7 +135,6 @@ while idx < len(laad_lijst):
                 x_onder = x_pos_onder + 1000
                 x_boven = x_pos_boven + 1200
             else:
-                # Type B paar (Gespiegeld): Onderkant Lang, Bovenkant Breed
                 rect1 = patches.Rectangle((x_onder, 20), 1200, 1000, linewidth=1, edgecolor='white', facecolor=item["kleur"], alpha=0.8)
                 ax.add_patch(rect1)
                 ax.text(x_onder + 600, 20 + 500, "IBC (Lang)", color="black", weight="bold", ha="center", va="center", fontsize=7)
@@ -152,21 +147,19 @@ while idx < len(laad_lijst):
                 x_boven += 1000
                 
             ibc_paar_teller += 1
-            idx += 2  # FIX: We springen met 2 tegelijk door de lijst omdat we een PAAR hebben getekend!
+            idx += 2
             continue
         else:
-            # Losse overgebleven enkele IBC (geen partner): behandel als normale losse pallet
             start_x = max(x_onder, x_boven)
             rect = patches.Rectangle((start_x, 20), 1000, 1200, linewidth=1, edgecolor='white', facecolor=item["kleur"], alpha=0.8)
             ax.add_patch(rect)
             ax.text(start_x + 500, 20 + 600, "IBC (Breed)", color="black", weight="bold", ha="center", va="center", fontsize=7)
             x_onder = start_x + 1000
-            x_boven = start_x  # Bovenkant blijft vrij voor eventuele volgende mix-rij
+            x_boven = start_x
             idx += 1
             continue
             
     else:
-        # Normale pallets (CP3, CP7, CP7 Smal)
         start_x = max(x_onder, x_boven)
         
         if item["naam_puur"] == "CP7 Smal":
@@ -178,16 +171,13 @@ while idx < len(laad_lijst):
             x_boven = start_x + item["L"]
             idx += 1
         else:
-            # Pallets per 2 naast elkaar plaatsen
             heeft_buur = (idx + 1 < len(laad_lijst) and laad_lijst[idx+1]["naam_puur"] != "CP7 Smal")
             
-            # Teken de eerste pallet (onderop)
             rect1 = patches.Rectangle((start_x, 20), item["L"], item["B"], linewidth=1, edgecolor='white', facecolor=item["kleur"], alpha=0.8)
             ax.add_patch(rect1)
             ax.text(start_x + (item["L"]/2), 20 + (item["B"]/2), item["naam"], color="black", weight="bold", ha="center", va="center", fontsize=7)
             
             if heeft_buur:
-                # Teken de buurman direct in dezelfde rij (bovenop)
                 item2 = laad_lijst[idx+1]
                 rect2 = patches.Rectangle((start_x, max_breedte - item2["B"] - 20), item2["L"], item2["B"], linewidth=1, edgecolor='white', facecolor=item2["kleur"], alpha=0.8)
                 ax.add_patch(rect2)
@@ -204,7 +194,7 @@ while idx < len(laad_lijst):
                 x_boven = start_x
                 idx += 1
 
-# Eindstand bepalen van de langste laadlijn
+# Eindstand bepalen
 totale_meters = max(x_onder, x_boven)
 restruimte = max_lengte - totale_meters
 
@@ -213,3 +203,11 @@ st.subheader("3. Resultaat & Visuele Indeling")
 
 if st.session_state.klik_volgorde:
     if restruimte >= 0:
+        st.success(f"Dit past! Je hebt nog {restruimte} mm over in de container.")
+    else:
+        st.error(f"Dit past NIET! Je komt {abs(restruimte)} mm tekort.")
+    st.pyplot(fig)
+    st.write(f"**Gebruikte lengte:** {totale_meters} mm van de {max_lengte} mm.")
+    st.write("💡 **Legenda:** [X] Blauw = CP3 | [X] Groen = CP7 | [X] Paars = CP7 Smal | [X] Geel = IBC")
+else:
+    st.info("De container is nog leeg. Gebruik de + en - knoppen bij de aantallen om direct te laden.")

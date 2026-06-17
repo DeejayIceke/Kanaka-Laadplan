@@ -47,7 +47,7 @@ product_info = {
     "IBC": {"lengte": 1000, "breedte": 1200, "kleur": "#f1c40f", "stapelbaar": False}
 }
 
-# 2. Invoer Hoofdaantallen (Normaal/Dubbel laden)
+# 2. Invoer Pallets
 st.write("### 2. Vul hoofdaantallen in (Dubbel laden):")
 col1, col2, col3, col4 = st.columns(4)
 
@@ -217,3 +217,4 @@ while idx < len(laad_lijst):
 
 # Eindstand bepalen
 totale_meters = max(x_onder, x_boven)
+

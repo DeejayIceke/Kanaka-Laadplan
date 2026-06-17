@@ -46,22 +46,35 @@ vloer_cp7 = int(math.ceil(pallets_cp7 / 2))
 vloer_cp7_smal = int(math.ceil(pallets_cp7_smal / 2))
 vloer_ibc = int(pallets_ibc)
 
-# Logistieke Logica met palletafmetingen
+# Logistieke Logica met palletafmetingen (volgorde van invoer behouden)
 artikelen = [
-    {"naam": "CP3", "vloer": vloer_cp3, "lengte": 1140, "breedte": 1140, "kleur": "#3498db"},
-    {"naam": "CP7", "vloer": vloer_cp7, "lengte": 1400, "breedte": 1100, "kleur": "#2ecc71"},
-    {"naam": "CP7 Smal", "vloer": vloer_cp7_smal, "lengte": 1100, "breedte": 1400, "kleur": "#9b59b6"},
-    {"naam": "IBC", "vloer": vloer_ibc, "lengte": 1000, "breedte": 1200, "kleur": "#f1c40f"}
+    {"naam": "CP3", "totaal_pallets": pallets_cp3, "vloer": vloer_cp3, "lengte": 1140, "breedte": 1140, "kleur": "#3498db", "stapelbaar": False},
+    {"naam": "CP7", "totaal_pallets": pallets_cp7, "vloer": vloer_cp7, "lengte": 1400, "breedte": 1100, "kleur": "#2ecc71", "stapelbaar": True},
+    {"naam": "CP7 Smal", "totaal_pallets": pallets_cp7_smal, "vloer": vloer_cp7_smal, "lengte": 1100, "breedte": 1400, "kleur": "#9b59b6", "stapelbaar": True},
+    {"naam": "IBC", "totaal_pallets": pallets_ibc, "vloer": vloer_ibc, "lengte": 1000, "breedte": 1200, "kleur": "#f1c40f", "stapelbaar": False}
 ]
 
-# Lijst opbouwen van alle individuele vloerplaatsen
+# Lijst opbouwen van alle individuele vloerplaatsen in de VOLGORDE VAN INVOER
 laad_lijst = []
 for art in artikelen:
-    for _ in range(art["vloer"]):
-        laad_lijst.append({"naam": art["naam"], "L": art["lengte"], "B": art["breedte"], "kleur": art["kleur"]})
+    overgebleven_pallets = art["totaal_pallets"]
+    for i in range(art["vloer"]):
+        # Bepaal of deze specifieke vloerplaats 1 of 2 hoog is
+        if art["stapelbaar"]:
+            hoogte_label = " (2H)" if overgebleven_pallets >= 2 else " (1H)"
+            overgebleven_pallets -= 2
+        else:
+            hoogte_label = "" # CP3 en IBC zijn altijd 1 hoog
+            
+        laad_lijst.append({
+            "naam": f"{art['naam']}{hoogte_label}", 
+            "naam_puur": art["naam"],
+            "L": art["lengte"], 
+            "B": art["breedte"], 
+            "kleur": art["kleur"]
+        })
 
-# Sorteer op lengte (langste eerst) voor een logische laadvolgorde
-laad_lijst.sort(key=lambda x: x["L"], reverse=True)
+# Sortering op lengte is hier NU VERWIJDERD! Hij laadt exact in volgorde van invoer.
 
 # Slimme breedte-planning: Pallets in rijen plaatsen op basis van de containerbreedte
 rijen = []
@@ -99,15 +112,15 @@ totale_meters = 0
 for rij in rijen:
     rij_lengte = max([item["L"] for item in rij])
     
-    # Gecorrigeerd: Check correct via het eerste item in de lijst van de rij
-    is_alleen_cp7_smal = len(rij) == 1 and rij[0]["naam"] == "CP7 Smal"
+    # Check correct via het eerste item in de lijst van de rij
+    is_alleen_cp7_smal = len(rij) == 1 and rij[0]["naam_puur"] == "CP7 Smal"
     
     for index, item in enumerate(rij):
         if is_alleen_cp7_smal:
             # Bereken het exacte midden voor de gewichtsverdeling
             y_pos = (max_breedte - item["B"]) / 2
         else:
-            # Normale verdeling: Eerste item onderaan, tweede item bovenaan
+            # Normale verdeling: Eerste item onderaan, second item bovenaan
             y_pos = 20 if index == 0 else max_breedte - item["B"] - 20
         
         rect = patches.Rectangle((huidige_x, y_pos), item["L"], item["B"], linewidth=1, edgecolor='white', facecolor=item["kleur"], alpha=0.8)
@@ -131,5 +144,3 @@ st.pyplot(fig)
 
 st.write(f"**Gebruikte lengte:** {totale_meters} mm van de {max_lengte} mm.")
 st.write("💡 **Legenda:** [X] Blauw = CP3 | [X] Groen = CP7 | [X] Paars = CP7 Smal | [X] Geel = IBC")
-
-

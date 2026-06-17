@@ -2,10 +2,8 @@ import streamlit as st, math, matplotlib.pyplot as plt, matplotlib.patches as pa
 st.set_page_config(page_title="Fons Laadplan", layout="wide")
 st.markdown("<style>.block-container { padding-top: 1rem !important; } div[data-testid='stNotification'] { background-color: #9b59b6 !important; color: white !important; }</style>", unsafe_allow_html=True)
 
-# Aangepast: Titel zonder 1.0
-st.title("Fons Laadplan 🚛")
+st.title("Fons Laadplan 1.0 🚛")
 
-# Aangepast: Maten direct tussen haakjes in het meerkeuzemenu gezet
 container_type = st.selectbox(
     "1. Kies container:", 
     ["45ft Container (13550 x 2426 mm)", "40ft Container (12030 x 2350 mm)", "20ft Container (5898 x 2350 mm)"]
@@ -31,8 +29,16 @@ product_info = {
     "IBC": {"lengte": 1000, "breedte": 1200, "kleur": "#f1c40f", "stapelbaar": False}
 }
 
-# Aangepast: Tekst veranderd naar 'Vul aantal pallets in'
-st.write("### 2. Vul aantal pallets in:")
+# AANGEPAST: De wisknop staat nu supercompact direct naast de titel via twee kolommen!
+col_titel, col_wis = st.columns([3, 1])
+with col_titel:
+    st.write("### 2. Vul aantal pallets in:")
+with col_wis:
+    if st.button("🗑️ Wis alles", type="primary", use_container_width=True):
+        st.session_state.klik_volgorde = []
+        st.session_state.reset_id += 1
+        st.rerun()
+
 col1, col2, col3, col4 = st.columns(4)
 
 with col1:
@@ -61,7 +67,7 @@ as_v_cp7_smal, as_a_cp7_smal = 0, 0
 as_v_ibc, as_a_ibc = 0, 0
 
 if pallets_cp3 > 0 or pallets_cp7 > 0 or pallets_cp7_smal > 0 or pallets_ibc > 0:
-    with st.expander("⚖️ Klik hier voor extra aslast-regelingen (Midden vooraan/achteraan)"):
+    with st.expander("⚖️ Klik hier for extra aslast-regelingen (Midden vooraan/achteraan)"):
         st.write("Stuur hier de pallets naar het midden van de container. Dit wordt direct afgetrokken van het totaal.")
         v_col1, v_col2, v_col3, v_col4 = st.columns(4)
         with v_col1:
@@ -88,10 +94,6 @@ hoofd_ibc = max(0, pallets_ibc - as_v_ibc - as_a_ibc)
 actuele_aantallen = {"CP3": hoofd_cp3, "CP7": hoofd_cp7, "CP7 Smal": hoofd_cp7_smal, "IBC": hoofd_ibc}
 
 st.write("---")
-if st.button("🗑️ Wis alle velden (Reset naar 0)", type="primary", use_container_width=True):
-    st.session_state.klik_volgorde = []
-    st.session_state.reset_id += 1
-    st.rerun()
 
 laad_lijst = []
 def voeg_partij_toe(art_naam, aantal, force_midden):

@@ -5,7 +5,7 @@ import matplotlib.patches as patches
 
 st.set_page_config(page_title="Kaneka Visueel Laadplan", layout="wide")
 st.title("📦 Kaneka Visueel Laadplan Dashboard")
-st.write("Vul direct de aantallen in. Bij 40ft/20ft containers worden IBC's automatisch in elkaar gevlochten met de juiste verhoudingen.")
+st.write("Vul direct de aantallen in. Bij 40ft/20ft containers worden IBC's automatisch geschakeld geladen zonder overlap.")
 
 # 1. Container Keuze
 st.subheader("1. Kies het containertype")
@@ -74,7 +74,7 @@ if st.button("🗑️ Wis alle velden en container (Reset volledig naar 0)", typ
     st.session_state.reset_id += 1
     st.rerun()
 
-# 3. Logistieke Logica: Bouw de individuele vloerplaatsen op
+# 3. Logistieke Logica: Bouw de laadlijst op
 laad_lijst = []
 for art_naam in st.session_state.klik_volgorde:
     total_pallets = actuele_aantallen[art_naam]
@@ -98,7 +98,7 @@ for art_naam in st.session_state.klik_volgorde:
             "kleur": info["kleur"]
         })
 
-# Rijen maken op basis van de containerbreedte met de slimme geschakelde logica voor IBC's
+# Rijen maken op basis van de containerbreedte met de geschakelde logica voor IBC's
 rijen = []
 tijdelijke_rij = []
 huidige_breedte_in_rij = 0
@@ -112,28 +112,28 @@ for item in laad_lijst:
         first_item = tijdelijke_rij[0]
         
         if not ibc_omgedraaid:
-            # Eerste ligt dwars (breed=1200, lang=1000)
+            # Rijtype A: Onderkant Breed (1200), Bovenkant Lang (1000)
             first_item["L"] = 1000
             first_item["B"] = 1200
             first_item["naam"] = "IBC (Breed)"
+            first_item["vlecht_type"] = "A_onder"
             
-            # De 2e zetten we rechtop (breed=1000, lang=1200)
             item_gekopieerd["L"] = 1200
             item_gekopieerd["B"] = 1000
             item_gekopieerd["naam"] = "IBC (Lang)"
+            item_gekopieerd["vlecht_type"] = "A_boven"
         else:
-            # Rij omdraaien voor stabiele vlecht
+            # Rijtype B: Onderkant Lang (1000), Bovenkant Breed (1200)
             first_item["L"] = 1200
             first_item["B"] = 1000
             first_item["naam"] = "IBC (Lang)"
+            first_item["vlecht_type"] = "B_onder"
             
             item_gekopieerd["L"] = 1000
             item_gekopieerd["B"] = 1200
             item_gekopieerd["naam"] = "IBC (Breed)"
+            item_gekopieerd["vlecht_type"] = "B_boven"
             
-        first_item["vlecht_mode"] = True
-        item_gekopieerd["vlecht_mode"] = True
-        
         tijdelijke_rij.append(item_gekopieerd)
         rijen.append(tijdelijke_rij)
         ibc_omgedraaid = not ibc_omgedraaid  # Wissel voor de volgende rij
@@ -158,8 +158,6 @@ ax.set_xlim(0, max_lengte)
 ax.set_ylim(0, max_breedte)
 ax.set_xlabel("Lengte container (mm)")
 ax.set_ylabel("Breedte container (mm)")
-
-# CRITIALE FIX: Dwing gelijke verhoudingen af (Schermvullend uitrekken voorkomen)
 ax.set_aspect('equal', adjustable='box')
 
 # Teken containeromtrek
@@ -171,23 +169,28 @@ totale_meters = 0
 
 # Teken elke rij pallets
 for rij in rijen:
-    # Gecorrigeerde vlecht-lengte: twee in elkaar gehaakte rijen IBC's kosten samen exact 2200 mm laadlengte (dus gemiddeld 1100 per rij)
-    if "vlecht_mode" in rij[0] and len(rij) == 2:
-        rij_lengte = 1100
-    else:
-        rij_lengte = max([item["L"] for item in rij])
+    # Controleer of deze rij gevlochten IBC's bevat
+    is_vlecht_rij = len(rij) == 2 and "vlecht_type" in rij[0]
+    rij_lengte = 1100 if is_vlecht_rij else max([item["L"] for item in rij])
     
     is_alleen_cp7_smal = len(rij) == 1 and rij[0]["naam_puur"] == "CP7 Smal"
     
     for index, item in enumerate(rij):
         if is_alleen_cp7_smal:
             y_pos = (max_breedte - item["B"]) / 2
+        elif is_vlecht_rij:
+            # WATERDICHTE POSITIONERING ZONDER OVERLAP:
+            if item["vlecht_type"] == "A_onder":
+                y_pos = 20
+            elif item["vlecht_type"] == "A_boven":
+                y_pos = max_breedte - 1000 - 20  # Plakt strak tegen de bovenrand
+            elif item["vlecht_type"] == "B_onder":
+                y_pos = 20
+            elif item["vlecht_type"] == "B_boven":
+                y_pos = max_breedte - 1200 - 20  # Plakt strak tegen de bovenrand
         else:
-            if "vlecht_mode" in item:
-                # Gevlochten IBC's strak positioneren op basis van hun gecorrigeerde breedte
-                y_pos = 20 if index == 0 else max_breedte - item["B"] - 20
-            else:
-                y_pos = 20 if index == 0 else max_breedte - item["B"] - 20
+            # Standaard positionering voor CP3, CP7, etc.
+            y_pos = 20 if index == 0 else max_breedte - item["B"] - 20
         
         rect = patches.Rectangle((huidige_x, y_pos), item["L"], item["B"], linewidth=1, edgecolor='white', facecolor=item["kleur"], alpha=0.8)
         ax.add_patch(rect)
@@ -212,4 +215,3 @@ if st.session_state.klik_volgorde:
     st.write("💡 **Legenda:** [X] Blauw = CP3 | [X] Groen = CP7 | [X] Paars = CP7 Smal | [X] Geel = IBC")
 else:
     st.info("De container is nog leeg. Gebruik de + en - knoppen bij de aantallen om direct te laden.")
-

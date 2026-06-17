@@ -3,10 +3,8 @@ import math
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 
-# Compacte pagina-instelling
 st.set_page_config(page_title="Fons Laadplan", layout="wide")
 
-# CSS voor minder scrollen op mobiel
 st.markdown("""
     <style>
         .block-container { padding-top: 1rem !important; padding-bottom: 1rem !important; }
@@ -15,7 +13,6 @@ st.markdown("""
 
 st.title("Fons Laadplan 🚛")
 
-# 1. Container Keuze
 container_type = st.selectbox(
     "1. Kies container:", 
     ["45ft Container", "40ft Container", "20ft Container"]
@@ -33,13 +30,11 @@ else:
 
 st.caption(f"📐 Formaat: {max_lengte} mm lang x {max_breedte} mm breed.")
 
-# Initialiseer het geheugen
 if "klik_volgorde" not in st.session_state:
     st.session_state.klik_volgorde = []
 if "reset_id" not in st.session_state:
     st.session_state.reset_id = 0
 
-# Definieer de vaste productspecificaties
 product_info = {
     "CP3": {"lengte": 1140, "breedte": 1140, "kleur": "#3498db", "stapelbaar": False},
     "CP7": {"lengte": 1400, "breedte": 1100, "kleur": "#2ecc71", "stapelbaar": True},
@@ -47,7 +42,6 @@ product_info = {
     "IBC": {"lengte": 1000, "breedte": 1200, "kleur": "#f1c40f", "stapelbaar": False}
 }
 
-# 2. Invoer Pallets
 st.write("### 2. Vul hoofdaantallen in (Dubbel laden):")
 col1, col2, col3, col4 = st.columns(4)
 
@@ -71,7 +65,6 @@ with col4:
     if pallets_ibc > 0 and "IBC" not in st.session_state.klik_volgorde:
         st.session_state.klik_volgorde.append("IBC")
 
-# Optionele Aslast regelingen
 st.write("### ⚖️ Extra Aslast Regelingen Midden (Optioneel):")
 col_v1, col_v2 = st.columns(2)
 with col_v1:
@@ -88,13 +81,11 @@ with col_a2:
 actuele_aantallen = {"CP3": pallets_cp3, "CP7": pallets_cp7, "CP7 Smal": pallets_cp7_smal, "IBC": pallets_ibc}
 st.session_state.klik_volgorde = [art for art in st.session_state.klik_volgorde if actuele_aantallen[art] > 0]
 
-# De WISKNOP
 if st.button("🗑️ Wis alles (Reset naar 0)", type="primary", use_container_width=True):
     st.session_state.klik_volgorde = []
     st.session_state.reset_id += 1
     st.rerun()
 
-# 3. Logistieke Logica: Bouw de complete laadlijst op
 laad_lijst = []
 
 def voeg_aslast_toe(art_naam, aantal):
@@ -110,10 +101,8 @@ def voeg_aslast_toe(art_naam, aantal):
                 "L": info["lengte"], "B": info["breedte"], "kleur": info["kleur"], "force_midden": True
             })
 
-# DEEL 1: Vooraan in het midden
 voeg_aslast_toe(aslast_v_type, aslast_v_aantal)
 
-# DEEL 2: De normale hoofdaantallen (volgorde van klikken)
 for art_naam in st.session_state.klik_volgorde:
     total_pallets = actuele_aantallen[art_naam]
     info = product_info[art_naam]
@@ -127,10 +116,8 @@ for art_naam in st.session_state.klik_volgorde:
             "L": info["lengte"], "B": info["breedte"], "kleur": info["kleur"], "force_midden": False
         })
 
-# DEEL 3: Achteraan in het midden
 voeg_aslast_toe(aslast_a_type, aslast_a_aantal)
 
-# 4. Teken Layout Setup
 fig, ax = plt.subplots(figsize=(15, 3.5))
 ax.set_xlim(0, max_lengte)
 ax.set_ylim(0, max_breedte)
@@ -147,7 +134,6 @@ idx = 0
 while idx < len(laad_lijst):
     item = laad_lijst[idx]
     
-    # Aslast / Geforceerd midden (of de CP7 Smal die altijd alleen staat)
     if item["force_midden"] or item["naam_puur"] == "CP7 Smal":
         start_x = max(x_onder, x_boven)
         y_pos = (max_breedte - item["B"]) / 2
@@ -159,7 +145,6 @@ while idx < len(laad_lijst):
         idx += 1
         continue
 
-    # Gevlochten IBC logica (Alleen voor de normale, niet-geforceerde IBC's in 40ft/20ft)
     if max_breedte == 2350 and item["naam_puur"] == "IBC":
         heeft_partner = (idx + 1 < len(laad_lijst) and laad_lijst[idx+1]["naam_puur"] == "IBC" and not laad_lijst[idx+1]["force_midden"])
         if heeft_partner:
@@ -191,7 +176,6 @@ while idx < len(laad_lijst):
             idx += 2
             continue
 
-    # Normale pallets zijkanten (per 2 naast elkaar)
     start_x = max(x_onder, x_boven)
     heeft_buur = (idx + 1 < len(laad_lijst) and laad_lijst[idx+1]["naam_puur"] != "CP7 Smal" and not laad_lijst[idx+1]["force_midden"])
     
@@ -215,6 +199,17 @@ while idx < len(laad_lijst):
         x_boven = start_x
         idx += 1
 
-# Eindstand bepalen
 totale_meters = max(x_onder, x_boven)
+restruimte = max_lengte - totale_meters
 
+st.write("### 3. Plan:")
+if st.session_state.klik_volgorde or aslast_v_aantal > 0 or aslast_a_aantal > 0:
+    if restruimte >= 0:
+        st.success(f"✅ Past! Nog {restruimte} mm over.")
+    else:
+        st.error(f"❌ Past NIET! {abs(restruimte)} mm tekort.")
+    st.pyplot(fig)
+    st.write(f"**Geladen:** {totale_meters} mm van {max_lengte} mm.")
+    st.write("💡 **Legenda:** [X] Blauw=CP3 | [X] Groen=CP7 | [X] Paars=CP7 Smal | [X] Geel=IBC")
+else:
+    st.info("Container is leeg. Gebruik de + en - knoppen om te beginnen.")

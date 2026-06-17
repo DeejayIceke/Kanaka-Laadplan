@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 
 st.set_page_config(page_title="Fons Laadplan", layout="wide")
-st.markdown("<style>.block-container { padding-top: 1rem !important; padding-bottom: 1rem !important; }</style>", unsafe_allow_html=True)
+st.markdown("<style>.block-container { padding-top: 1rem !important; }</style>", unsafe_allow_html=True)
 st.title("Fons Laadplan 1.0 🚛")
 
 container_type = st.selectbox("1. Kies container:", ["45ft Container", "40ft Container", "20ft Container"])
@@ -40,7 +40,8 @@ with col2:
     if pallets_cp7 > 0 and "CP7" not in st.session_state.klik_volgorde: st.session_state.klik_volgorde.append("CP7")
 
 with col3:
-    st.error("**CP7 Smal (1100x1400)**")
+    st.markdown("<style>div[data-testid='stNotification'] { background-color: #9b59b6 !important; color: white !important; }</style>", unsafe_allow_html=True)
+    st.info("**CP7 Smal (1100x1400)**")
     pallets_cp7_smal = st.number_input("Totaal aantal Smal", min_value=0, value=0, step=1, key=f"cp7_smal_{st.session_state.reset_id}")
     as_v_cp7_smal = st.number_input("Midden VOORAAN", min_value=0, value=0, step=1, key=f"v_cp7_smal_{st.session_state.reset_id}")
     as_a_cp7_smal = st.number_input("Midden ACHTERAAN", min_value=0, value=0, step=1, key=f"a_cp7_smal_{st.session_state.reset_id}")
@@ -58,7 +59,6 @@ hoofd_cp7 = max(0, pallets_cp7 - as_v_cp7 - as_a_cp7)
 hoofd_cp7_smal = max(0, pallets_cp7_smal - as_v_cp7_smal - as_a_cp7_smal)
 hoofd_ibc = max(0, pallets_ibc - as_v_ibc - as_a_ibc)
 actuele_aantallen = {"CP3": hoofd_cp3, "CP7": hoofd_cp7, "CP7 Smal": hoofd_cp7_smal, "IBC": hoofd_ibc}
-st.session_state.klik_volgorde = [art for art in st.session_state.klik_volgorde if pallets_cp3+pallets_cp7+pallets_cp7_smal+pallets_ibc > 0]
 
 st.write("---")
 if st.button("🗑️ Wis alle velden (Reset naar 0)", type="primary", use_container_width=True):
@@ -81,12 +81,12 @@ voeg_partij_toe("CP3", as_v_cp3, force_midden=True)
 voeg_partij_toe("CP7", as_v_cp7, force_midden=True)
 voeg_partij_toe("CP7 Smal", as_v_cp7_smal, force_midden=True)
 voeg_partij_toe("IBC", as_v_ibc, force_midden=True)
-for art_naam in st.session_state.klik_volgorde: voeg_partij_toe(art_naam, actuele_aantallen[art_naam], force_midden=False)
+for art_naam in st.session_state.klik_volgorde:
+    if art_naam in actuele_aantallen: voeg_partij_toe(art_naam, actuele_aantallen[art_naam], force_midden=False)
 voeg_partij_toe("CP3", as_a_cp3, force_midden=True)
 voeg_partij_toe("CP7", as_a_cp7, force_midden=True)
 voeg_partij_toe("CP7 Smal", as_a_cp7_smal, force_midden=True)
 voeg_partij_toe("IBC", as_a_ibc, force_midden=True)
-
 fig, ax = plt.subplots(figsize=(15, 3.5))
 ax.set_xlim(0, max_lengte)
 ax.set_ylim(0, max_breedte)
@@ -120,7 +120,7 @@ while idx < len(laad_lijst):
                 ax.text(x_pos_boven + 600, max_breedte - 1000 - 20 + 500, "IBC (Lang)", color="black", weight="bold", ha="center", va="center", fontsize=7)
                 x_onder, x_boven = x_pos_onder + 1000, x_pos_boven + 1200
             else:
-                rect1 = patches.Rectangle((x_onder, 20), 1200, 1000, linewidth=1, edgecolor='white', facecolor=item["kleur"], alpha=0.8)
+                rect1 = patches.Rectangle((x_onder, 20), 1200, 1000, linewidth=1, edgecolor='white', facecolor=item["kleur'], alpha=0.8)
                 ax.add_patch(rect1)
                 ax.text(x_onder + 600, 20 + 500, "IBC (Lang)", color="black", weight="bold", ha="center", va="center", fontsize=7)
                 rect2 = patches.Rectangle((x_boven, max_breedte - 1200 - 20), 1000, 1200, linewidth=1, edgecolor='white', facecolor=item["kleur"], alpha=0.8)
@@ -157,4 +157,5 @@ if pallets_cp3+pallets_cp7+pallets_cp7_smal+pallets_ibc > 0 or as_v_cp3+as_v_cp7
     else: st.error(f"❌ Past NIET! {abs(restruimte)} mm tekort.")
     st.pyplot(fig)
     st.write(f"**Geladen:** {totale_meters} mm van {max_lengte} mm.")
-st.write("💡 Legenda: [X] Blauw=CP3 | [X] Groen=CP7 | [X] Paars=CP7 Smal | [X] Geel=IBC")else:st.info("Container is leeg. Gebruik de + en - knoppen om te beginnen.")
+    st.write("💡 **Legenda:** [X] Blauw=CP3 | [X] Groen=CP7 | [X] Paars=CP7 Smal | [X] Geel=IBC")
+else: st.info("Container is leeg. Gebruik de + en - knoppen om te beginnen.")

@@ -19,10 +19,10 @@ if container_type == "45ft Container":
     max_breedte = 2426  # Pallet Wide breedte
 elif container_type == "40ft Container":
     max_lengte = 12030  
-    max_breedte = 2350  # Standaard containerbreedte uit jouw opmerking
+    max_breedte = 2350  # Standaard containerbreedte
 else:
     max_lengte = 5898   
-    max_breedte = 2350  # Standaard containerbreedte uit jouw opmerking
+    max_breedte = 2350  # Standaard containerbreedte
 
 st.info(f"Geselecteerde container laadruimte: **{max_lengte} mm** lang x **{max_breedte} mm** breed.")
 
@@ -102,38 +102,36 @@ for art_naam in st.session_state.klik_volgorde:
 rijen = []
 tijdelijke_rij = []
 huidige_breedte_in_rij = 0
-
-# Houd bij of de vorige rij omgedraaid was voor de IBC-vlechtlogica
 ibc_omgedraaid = False
 
 for item in laad_lijst:
-    # Check of we in een smalle container (2350) zitten én we twee IBC's proberen te combineren
     is_ibc_in_smalle_container = (max_breedte == 2350 and item["naam_puur"] == "IBC")
     
     if is_ibc_in_smalle_container and len(tijdelijke_rij) == 1 and tijdelijke_rij[0]["naam_puur"] == "IBC":
-        # We vlechtten de 2e IBC: de een overdwars (1200 breed, 1000 lang), de ander recht (1000 breed, 1200 lang)
-        # Samen kost dit 1200+1000 = 2200 breedte, wat past binnen 2350!
         item_gekopieerd = item.copy()
+        first_item = tijdelijke_rij[0]
         
-        # We toggelen de oriëntatie op basis van de rij-geschiedenis (om en om)
         if not ibc_omgedraaid:
-            # Eerste IBC ligt dwars (reeds in tijdelijke_rij), deze 2e IBC zetten we rechtop
+            # Eerste ligt dwars (breed), de 2e zetten we in de lengte (lang)
             item_gekopieerd["L"] = 1200
             item_gekopieerd["B"] = 1000
-            item_gekopieerd["vlecht_type"] = "lang"
-            tijdelijke_rij[0]["vlecht_type"] = "breed"
+            item_gekopieerd["naam"] = "IBC (Lang)"
+            first_item["naam"] = "IBC (Breed)"
         else:
-            # Vorige rij was zo, dus nu draaien we het om
+            # Rij omdraaien voor stabiele vlecht
             item_gekopieerd["L"] = 1000
             item_gekopieerd["B"] = 1200
-            item_gekopieerd["vlecht_type"] = "breed"
-            tijdelijke_rij[0]["L"] = 1200
-            tijdelijke_rij[0]["B"] = 1000
-            tijdelijke_rij[0]["vlecht_type"] = "lang"
+            item_gekopieerd["naam"] = "IBC (Breed)"
+            first_item["L"] = 1200
+            first_item["B"] = 1000
+            first_item["naam"] = "IBC (Lang)"
             
+        first_item["vlecht_mode"] = True
+        item_gekopieerd["vlecht_mode"] = True
+        
         tijdelijke_rij.append(item_gekopieerd)
         rijen.append(tijdelijke_rij)
-        ibc_omgedraaid = not ibc_omgedraaid  # Wissel voor de volgende rij IBC's
+        ibc_omgedraaid = not ibc_omgedraaid  # Wissel voor de volgende rij
         tijdelijke_rij = []
         huidige_breedte_in_rij = 0
     
@@ -168,12 +166,11 @@ for rij in rijen:
     is_alleen_cp7_smal = len(rij) == 1 and rij[0]["naam_puur"] == "CP7 Smal"
     
     for index, item in enumerate(rij):
-        # Y-positie bepalen
         if is_alleen_cp7_smal:
             y_pos = (max_breedte - item["B"]) / 2
         else:
-            # Als het een gevlochten IBC is, zetten we ze strak tegen elkaar
-            if "vlecht_type" in item:
+            # Gecorrigeerde positionering voor gevlochten IBC's
+            if "vlecht_mode" in item:
                 y_pos = 20 if index == 0 else rij[0]["B"] + 40
             else:
                 y_pos = 20 if index == 0 else max_breedte - item["B"] - 20

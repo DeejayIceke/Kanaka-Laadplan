@@ -5,9 +5,9 @@ import matplotlib.patches as patches
 
 st.set_page_config(page_title="Kaneka Visueel Laadplan", layout="wide")
 st.title("📦 Kaneka Visueel Laadplan Dashboard")
-st.write("Bereken de resterende ruimte en bepaal zelf de laadvolgorde.")
+st.write("Bereken de resterende ruimte. De volgorde wordt bepaald door het artikel dat je als eerste ophoogt.")
 
-# 1. Container Keuze - Alleen de 3 gevraagde types
+# 1. Container Keuze
 st.subheader("1. Kies het containertype")
 container_type = st.selectbox(
     "Containertype", 
@@ -26,9 +26,9 @@ else:
 
 st.info(f"Geselecteerde container laadruimte: **{max_lengte} mm** lang x **{max_breedte} mm** breed.")
 
-# Initialiseer de laadlijst in het geheugen van de app
-if "laad_volgorde_lijst" not in st.session_state:
-    st.session_state.laad_volgorde_lijst = []
+# Initialiseer de klikvolgorde in het geheugen
+if "klik_volgorde" not in st.session_state:
+    st.session_state.klik_volgorde = []
 
 # Definieer de vaste productspecificaties
 product_info = {
@@ -38,66 +38,57 @@ product_info = {
     "IBC": {"lengte": 1000, "breedte": 1200, "kleur": "#f1c40f", "stapelbaar": False}
 }
 
-# 2. Invoer Pallets - Alles tegelijk zichtbaar!
-st.subheader("2. Vul het aantal pallets in en bepaal de volgorde")
-st.write("Vul bij een artikel het aantal in en klik op de knop om het in de container te schuiven.")
-
+# 2. Invoer Pallets - Directe invoer zonder extra knoppen
+st.subheader("2. Vul het aantal pallets in")
 col1, col2, col3, col4 = st.columns(4)
 
+# We gebruiken een unieke sleutel per container-reset om de velden écht op 0 te krijgen bij wissen
+if "reset_id" not in st.session_state:
+    st.session_state.reset_id = 0
+
 with col1:
-    pallets_cp3 = st.number_input("Aantal CP3 (1140x1140)", min_value=0, value=0, step=1, key="in_cp3")
-    if pallets_cp3 > 0:
-        if st.button("➕ Laad CP3 eerst/volgende", key="btn_cp3", use_container_width=True):
-            st.session_state.laad_volgorde_lijst.append({"naam": "CP3", "aantal": pallets_cp3})
-            st.rerun()
+    pallets_cp3 = st.number_input("Aantal CP3 (1140x1140)", min_value=0, value=0, step=1, key=f"cp3_{st.session_state.reset_id}")
+    if pallets_cp3 > 0 and "CP3" not in st.session_state.klik_volgorde:
+        st.session_state.klik_volgorde.append("CP3")
 
 with col2:
-    pallets_cp7 = st.number_input("Aantal CP7 (1400x1100)", min_value=0, value=0, step=1, key="in_cp7")
-    if pallets_cp7 > 0:
-        if st.button("➕ Laad CP7 eerst/volgende", key="btn_cp7", use_container_width=True):
-            st.session_state.laad_volgorde_lijst.append({"naam": "CP7", "aantal": pallets_cp7})
-            st.rerun()
+    pallets_cp7 = st.number_input("Aantal CP7 (1400x1100)", min_value=0, value=0, step=1, key=f"cp7_{st.session_state.reset_id}")
+    if pallets_cp7 > 0 and "CP7" not in st.session_state.klik_volgorde:
+        st.session_state.klik_volgorde.append("CP7")
 
 with col3:
-    pallets_cp7_smal = st.number_input("Aantal CP7 Smal (1100x1400)", min_value=0, value=0, step=1, key="in_cp7_smal")
-    if pallets_cp7_smal > 0:
-        if st.button("➕ Laad CP7 Smal eerst/volgende", key="btn_cp7_smal", use_container_width=True):
-            st.session_state.laad_volgorde_lijst.append({"naam": "CP7 Smal", "aantal": pallets_cp7_smal})
-            st.rerun()
+    pallets_cp7_smal = st.number_input("Aantal CP7 Smal (1100x1400)", min_value=0, value=0, step=1, key=f"cp7_smal_{st.session_state.reset_id}")
+    if pallets_cp7_smal > 0 and "CP7 Smal" not in st.session_state.klik_volgorde:
+        st.session_state.klik_volgorde.append("CP7 Smal")
 
 with col4:
-    pallets_ibc = st.number_input("Aantal IBC's (1000x1200)", min_value=0, value=0, step=1, key="in_ibc")
-    if pallets_ibc > 0:
-        if st.button("➕ Laad IBC eerst/volgende", key="btn_ibc", use_container_width=True):
-            st.session_state.laad_volgorde_lijst.append({"naam": "IBC", "aantal": pallets_ibc})
-            st.rerun()
+    pallets_ibc = st.number_input("Aantal IBC's (1000x1200)", min_value=0, value=0, step=1, key=f"ibc_{st.session_state.reset_id}")
+    if pallets_ibc > 0 and "IBC" not in st.session_state.klik_volgorde:
+        st.session_state.klik_volgorde.append("IBC")
 
-# De WISKNOP die ALLES gegarandeerd reset
+# Mocht een teller handmatig naar 0 gezet zijn, haal hem dan uit de volgorde
+aantallen = {"CP3": pallets_cp3, "CP7": pallets_cp7, "CP7 Smal": pallets_cp7_smal, "IBC": pallets_ibc}
+st.session_state.klik_volgorde = [art for art in st.session_state.klik_volgorde if aantallen[art] > 0]
+
+# De WISKNOP die gegarandeerd ALLES reset zonder foutmeldingen
 st.write("---")
 if st.button("🗑️ Wis alle velden en container (Reset volledig naar 0)", type="primary", use_container_width=True):
-    st.session_state.laad_volgorde_lijst = []
-    for sleutel in ["in_cp3", "in_cp7", "in_cp7_smal", "in_ibc"]:
-        if sleutel in st.session_state:
-            st.session_state[sleutel] = 0
+    st.session_state.klik_volgorde = []
+    st.session_state.reset_id += 1  # Dit dwingt alle invoervelden direct terug naar 0
     st.rerun()
 
-# Toon de actuele volgorde aan de lader
-if st.session_state.laad_volgorde_lijst:
-    st.write("### 📜 Huidige laadvolgorde (van kopschot tot deur):")
-    volgorde_tekst = " -> ".join([f"**{item['aantal']}x {item['naam']}**" for item in st.session_state.laad_wachtrij if 'laad_wachtrij' in st.session_state] if 'laad_wachtrij' in st.session_state else [f"**{item['aantal']}x {item['naam']}**" for item in st.session_state.laad_volgorde_lijst])
-    st.markdown(volgorde_tekst)
-
-# 3. Logistieke Logica: Lijst opbouwen exact op volgorde van aanklikken
+# 3. Logistieke Logica: Bouw de laadlijst op in de exacte volgorde van klikken
 laad_lijst = []
-for item in st.session_state.laad_volgorde_lijst:
-    info = product_info[item["naam"]]
+for art_naam in st.session_state.klik_volgorde:
+    aantal = aantallen[art_naam]
+    info = product_info[art_naam]
     
     if info["stapelbaar"]:
-        vloerplaatsen = int(math.ceil(item["aantal"] / 2))
+        vloerplaatsen = int(math.ceil(aantal / 2))
     else:
-        vloerplaatsen = int(item["aantal"])
+        vloerplaatsen = int(aantal)
         
-    overgebleven_pallets = item["aantal"]
+    overgebleven_pallets = aantal
     
     for _ in range(vloerplaatsen):
         if info["stapelbaar"]:
@@ -107,14 +98,14 @@ for item in st.session_state.laad_volgorde_lijst:
             hoogte_label = ""
             
         laad_lijst.append({
-            "naam": f"{item['naam']}{hoogte_label}", 
-            "naam_puur": item["naam"],
+            "naam": f"{art_naam}{hoogte_label}", 
+            "naam_puur": art_naam,
             "L": info["lengte"], 
             "B": info["breedte"], 
             "kleur": info["kleur"]
         })
 
-# Rijen maken op basis van de containerbreedte (behoudt de volgorde!)
+# Rijen maken op basis van de containerbreedte (behoudt de klikvolgorde!)
 rijen = []
 tijdelijke_rij = []
 huidige_breedte_in_rij = 0
@@ -168,7 +159,7 @@ restruimte = max_lengte - totale_meters
 # 5. Resultaat tonen
 st.subheader("3. Resultaat & Visuele Indeling")
 
-if st.session_state.laad_volgorde_lijst:
+if st.session_state.klik_volgorde:
     if restruimte >= 0:
         st.success(f"Dit past! Je hebt nog {restruimte} mm over in de container.")
     else:
@@ -178,4 +169,6 @@ if st.session_state.laad_volgorde_lijst:
     st.write(f"**Gebruikte lengte:** {totale_meters} mm van de {max_lengte} mm.")
     st.write("💡 **Legenda:** [X] Blauw = CP3 | [X] Groen = CP7 | [X] Paars = CP7 Smal | [X] Geel = IBC")
 else:
+    st.info("De container is nog leeg. Klik op de + of - bij de pallets om te beginnen.")
+
     st.info("De container is nog leeg. Vul hierboven aantallen in en klik op een 'Laad'-knop.")

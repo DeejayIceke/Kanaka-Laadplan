@@ -11,7 +11,7 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-st.title("Fons Laadplan 🚛")
+st.title("Fons Laadplan 1.0 🚛")
 
 container_type = st.selectbox(
     "1. Kies container:", 
@@ -42,54 +42,54 @@ product_info = {
     "IBC": {"lengte": 1000, "breedte": 1200, "kleur": "#f1c40f", "stapelbaar": False}
 }
 
-st.write("### 2. Vul hoofdaantallen in (Dubbel laden):")
+st.write("### 2. Vul aantallen in per artikel:")
 col1, col2, col3, col4 = st.columns(4)
 
 with col1:
-    pallets_cp3 = st.number_input("Aantal CP3", min_value=0, value=0, step=1, key=f"cp3_{st.session_state.reset_id}")
+    st.info("**CP3 (1140x1140)**")
+    pallets_cp3 = st.number_input("Hoofdaantal CP3", min_value=0, value=0, step=1, key=f"cp3_{st.session_state.reset_id}")
+    as_v_cp3 = st.number_input("Midden VOORAAN", min_value=0, value=0, step=1, key=f"v_cp3_{st.session_state.reset_id}")
+    as_a_cp3 = st.number_input("Midden ACHTERAAN", min_value=0, value=0, step=1, key=f"a_cp3_{st.session_state.reset_id}")
     if pallets_cp3 > 0 and "CP3" not in st.session_state.klik_volgorde:
         st.session_state.klik_volgorde.append("CP3")
 
 with col2:
-    pallets_cp7 = st.number_input("Aantal CP7", min_value=0, value=0, step=1, key=f"cp7_{st.session_state.reset_id}")
+    st.success("**CP7 (1400x1100)**")
+    pallets_cp7 = st.number_input("Hoofdaantal CP7", min_value=0, value=0, step=1, key=f"cp7_{st.session_state.reset_id}")
+    as_v_cp7 = st.number_input("Midden VOORAAN", min_value=0, value=0, step=1, key=f"v_cp7_{st.session_state.reset_id}")
+    as_a_cp7 = st.number_input("Midden ACHTERAAN", min_value=0, value=0, step=1, key=f"a_cp7_{st.session_state.reset_id}")
     if pallets_cp7 > 0 and "CP7" not in st.session_state.klik_volgorde:
         st.session_state.klik_volgorde.append("CP7")
 
 with col3:
-    pallets_cp7_smal = st.number_input("Aantal CP7 Smal", min_value=0, value=0, step=1, key=f"cp7_smal_{st.session_state.reset_id}")
+    st.write("<div style='background-color:#9b59b6; padding:5px; border-radius:5px; color:white; font-weight:bold; text-align:center;'>CP7 Smal (1100x1400)</div>", unsafe_allow_html=True)
+    pallets_cp7_smal = st.number_input("Hoofdaantal Smal", min_value=0, value=0, step=1, key=f"cp7_smal_{st.session_state.reset_id}")
+    as_v_cp7_smal = st.number_input("Midden VOORAAN", min_value=0, value=0, step=1, key=f"v_cp7_smal_{st.session_state.reset_id}")
+    as_a_cp7_smal = st.number_input("Midden ACHTERAAN", min_value=0, value=0, step=1, key=f"a_cp7_smal_{st.session_state.reset_id}")
     if pallets_cp7_smal > 0 and "CP7 Smal" not in st.session_state.klik_volgorde:
         st.session_state.klik_volgorde.append("CP7 Smal")
 
 with col4:
-    pallets_ibc = st.number_input("Aantal IBC's", min_value=0, value=0, step=1, key=f"ibc_{st.session_state.reset_id}")
+    st.warning("**IBC (1000x1200)**")
+    pallets_ibc = st.number_input("Hoofdaantal IBC", min_value=0, value=0, step=1, key=f"ibc_{st.session_state.reset_id}")
+    as_v_ibc = st.number_input("Midden VOORAAN", min_value=0, value=0, step=1, key=f"v_ibc_{st.session_state.reset_id}")
+    as_a_ibc = st.number_input("Midden ACHTERAAN", min_value=0, value=0, step=1, key=f"a_ibc_{st.session_state.reset_id}")
     if pallets_ibc > 0 and "IBC" not in st.session_state.klik_volgorde:
         st.session_state.klik_volgorde.append("IBC")
-
-st.write("### ⚖️ Extra Aslast Regelingen Midden (Optioneel):")
-col_v1, col_v2 = st.columns(2)
-with col_v1:
-    aslast_v_type = st.selectbox("Type in het midden VOORAAN:", ["Geen", "CP3", "CP7", "CP7 Smal", "IBC"], key=f"as_v_t_{st.session_state.reset_id}")
-with col_v2:
-    aslast_v_aantal = st.number_input("Aantal stuks vooraan:", min_value=0, value=0, step=1, key=f"as_v_a_{st.session_state.reset_id}")
-
-col_a1, col_a2 = st.columns(2)
-with col_a1:
-    aslast_a_type = st.selectbox("Type in het midden ACHTERAAN:", ["Geen", "CP3", "CP7", "CP7 Smal", "IBC"], key=f"as_a_t_{st.session_state.reset_id}")
-with col_a2:
-    aslast_a_aantal = st.number_input("Aantal stuks achteraan:", min_value=0, value=0, step=1, key=f"as_a_a_{st.session_state.reset_id}")
 
 actuele_aantallen = {"CP3": pallets_cp3, "CP7": pallets_cp7, "CP7 Smal": pallets_cp7_smal, "IBC": pallets_ibc}
 st.session_state.klik_volgorde = [art for art in st.session_state.klik_volgorde if actuele_aantallen[art] > 0]
 
-if st.button("🗑️ Wis alles (Reset naar 0)", type="primary", use_container_width=True):
+st.write("---")
+if st.button("🗑️ Wis alle velden (Reset naar 0)", type="primary", use_container_width=True):
     st.session_state.klik_volgorde = []
     st.session_state.reset_id += 1
     st.rerun()
 
 laad_lijst = []
 
-def voeg_aslast_toe(art_naam, aantal):
-    if art_naam != "Geen" and aantal > 0:
+def voeg_partij_toe(art_naam, aantal, force_midden):
+    if aantal > 0:
         info = product_info[art_naam]
         vloer = int(math.ceil(aantal / 2)) if info["stapelbaar"] else int(aantal)
         overgebleven = aantal
@@ -98,26 +98,21 @@ def voeg_aslast_toe(art_naam, aantal):
             overgebleven -= 2
             laad_lijst.append({
                 "naam": f"{art_naam}{h_label}", "naam_puur": art_naam,
-                "L": info["lengte"], "B": info["breedte"], "kleur": info["kleur"], "force_midden": True
+                "L": info["lengte"], "B": info["breedte"], "kleur": info["kleur"], "force_midden": force_midden
             })
 
-voeg_aslast_toe(aslast_v_type, aslast_v_aantal)
+voeg_partij_toe("CP3", as_v_cp3, force_midden=True)
+voeg_partij_toe("CP7", as_v_cp7, force_midden=True)
+voeg_partij_toe("CP7 Smal", as_v_cp7_smal, force_midden=True)
+voeg_partij_toe("IBC", as_v_ibc, force_midden=True)
 
 for art_naam in st.session_state.klik_volgorde:
-    total_pallets = actuele_aantallen[art_naam]
-    info = product_info[art_naam]
-    vloerplaatsen = int(math.ceil(total_pallets / 2)) if info["stapelbaar"] else int(total_pallets)
-    overgebleven = total_pallets
-    for _ in range(vloerplaatsen):
-        h_label = " (2H)" if info["stapelbaar"] and overgebleven >= 2 else (" (1H)" if info["stapelbaar"] else "")
-        overgebleven -= 2
-        laad_lijst.append({
-            "naam": f"{art_naam}{h_label}", "naam_puur": art_naam,
-            "L": info["lengte"], "B": info["breedte"], "kleur": info["kleur"], "force_midden": False
-        })
+    voeg_partij_toe(art_naam, actuele_aantallen[art_naam], force_midden=False)
 
-voeg_aslast_toe(aslast_a_type, aslast_a_aantal)
-
+voeg_partij_toe("CP3", as_a_cp3, force_midden=True)
+voeg_partij_toe("CP7", as_a_cp7, force_midden=True)
+voeg_partij_toe("CP7 Smal", as_a_cp7_smal, force_midden=True)
+voeg_partij_toe("IBC", as_a_ibc, force_midden=True)
 fig, ax = plt.subplots(figsize=(15, 3.5))
 ax.set_xlim(0, max_lengte)
 ax.set_ylim(0, max_breedte)
@@ -203,7 +198,7 @@ totale_meters = max(x_onder, x_boven)
 restruimte = max_lengte - totale_meters
 
 st.write("### 3. Plan:")
-if st.session_state.klik_volgorde or aslast_v_aantal > 0 or aslast_a_aantal > 0:
+if st.session_state.klik_volgorde or as_v_cp3 > 0 or as_v_cp7 > 0 or as_v_cp7_smal > 0 or as_v_ibc > 0 or as_a_cp3 > 0 or as_a_cp7 > 0 or as_a_cp7_smal > 0 or as_a_ibc > 0:
     if restruimte >= 0:
         st.success(f"✅ Past! Nog {restruimte} mm over.")
     else:

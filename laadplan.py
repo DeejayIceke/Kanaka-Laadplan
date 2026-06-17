@@ -5,7 +5,7 @@ import matplotlib.patches as patches
 
 st.set_page_config(page_title="Kaneka Visueel Laadplan", layout="wide")
 st.title("📦 Kaneka Visueel Laadplan Dashboard")
-st.write("Vul direct de aantallen in. Bij 40ft/20ft containers worden IBC's automatisch geschakeld geladen zonder overlap.")
+st.write("Vul direct de aantallen in. Bij 40ft/20ft containers vlechtten de IBC's nu mathematisch perfect in elkaar.")
 
 # 1. Container Keuze
 st.subheader("1. Kies het containertype")
@@ -74,12 +74,11 @@ if st.button("🗑️ Wis alle velden en container (Reset volledig naar 0)", typ
     st.session_state.reset_id += 1
     st.rerun()
 
-# 3. Logistieke Logica: Bouw de laadlijst op
+# 3. Logistieke Logica: Bouw de individuele vloerplaatsen op
 laad_lijst = []
 for art_naam in st.session_state.klik_volgorde:
     total_pallets = actuele_aantallen[art_naam]
     info = product_info[art_naam]
-    
     vloerplaatsen = int(math.ceil(total_pallets / 2)) if info["stapelbaar"] else int(total_pallets)
     overgebleven = total_pallets
     
@@ -98,61 +97,7 @@ for art_naam in st.session_state.klik_volgorde:
             "kleur": info["kleur"]
         })
 
-# Rijen maken op basis van de containerbreedte met de geschakelde logica voor IBC's
-rijen = []
-tijdelijke_rij = []
-huidige_breedte_in_rij = 0
-ibc_omgedraaid = False
-
-for item in laad_lijst:
-    is_ibc_in_smalle_container = (max_breedte == 2350 and item["naam_puur"] == "IBC")
-    
-    if is_ibc_in_smalle_container and len(tijdelijke_rij) == 1 and tijdelijke_rij[0]["naam_puur"] == "IBC":
-        item_gekopieerd = item.copy()
-        first_item = tijdelijke_rij[0]
-        
-        if not ibc_omgedraaid:
-            # Rijtype A: Onderkant Breed (1200), Bovenkant Lang (1000)
-            first_item["L"] = 1000
-            first_item["B"] = 1200
-            first_item["naam"] = "IBC (Breed)"
-            first_item["vlecht_type"] = "A_onder"
-            
-            item_gekopieerd["L"] = 1200
-            item_gekopieerd["B"] = 1000
-            item_gekopieerd["naam"] = "IBC (Lang)"
-            item_gekopieerd["vlecht_type"] = "A_boven"
-        else:
-            # Rijtype B: Onderkant Lang (1000), Bovenkant Breed (1200)
-            first_item["L"] = 1200
-            first_item["B"] = 1000
-            first_item["naam"] = "IBC (Lang)"
-            first_item["vlecht_type"] = "B_onder"
-            
-            item_gekopieerd["L"] = 1000
-            item_gekopieerd["B"] = 1200
-            item_gekopieerd["naam"] = "IBC (Breed)"
-            item_gekopieerd["vlecht_type"] = "B_boven"
-            
-        tijdelijke_rij.append(item_gekopieerd)
-        rijen.append(tijdelijke_rij)
-        ibc_omgedraaid = not ibc_omgedraaid  # Wissel voor de volgende rij
-        tijdelijke_rij = []
-        huidige_breedte_in_rij = 0
-    
-    elif (huidige_breedte_in_rij + item["B"] <= max_breedte) and (len(tijdelijke_rij) < 2):
-        tijdelijke_rij.append(item)
-        huidige_breedte_in_rij += item["B"]
-    else:
-        if tijdelijke_rij:
-            rijen.append(tijdelijke_rij)
-        tijdelijke_rij = [item]
-        huidige_breedte_in_rij = item["B"]
-
-if tijdelijke_rij:
-    rijen.append(tijdelijke_rij)
-
-# 4. Teken Layout Berekening
+# 4. Teken Layout Setup
 fig, ax = plt.subplots(figsize=(15, 3.5))
 ax.set_xlim(0, max_lengte)
 ax.set_ylim(0, max_breedte)
@@ -160,45 +105,88 @@ ax.set_xlabel("Lengte container (mm)")
 ax.set_ylabel("Breedte container (mm)")
 ax.set_aspect('equal', adjustable='box')
 
-# Teken containeromtrek
 container_border = patches.Rectangle((0, 0), max_lengte, max_breedte, linewidth=2, edgecolor='black', facecolor='none')
 ax.add_patch(container_border)
 
-huidige_x = 0
-totale_meters = 0
+# Onafhankelijke tracking van de laadlijnen (onderkant vs bovenkant van de container)
+x_onder = 0
+x_boven = 0
+ibc_paar_teller = 0
 
-# Teken elke rij pallets
-for rij in rijen:
-    # Controleer of deze rij gevlochten IBC's bevat
-    is_vlecht_rij = len(rij) == 2 and "vlecht_type" in rij[0]
-    rij_lengte = 1100 if is_vlecht_rij else max([item["L"] for item in rij])
-    
-    is_alleen_cp7_smal = len(rij) == 1 and rij[0]["naam_puur"] == "CP7 Smal"
-    
-    for index, item in enumerate(rij):
-        if is_alleen_cp7_smal:
-            y_pos = (max_breedte - item["B"]) / 2
-        elif is_vlecht_rij:
-            # WATERDICHTE POSITIONERING ZONDER OVERLAP:
-            if item["vlecht_type"] == "A_onder":
-                y_pos = 20
-            elif item["vlecht_type"] == "A_boven":
-                y_pos = max_breedte - 1000 - 20  # Plakt strak tegen de bovenrand
-            elif item["vlecht_type"] == "B_onder":
-                y_pos = 20
-            elif item["vlecht_type"] == "B_boven":
-                y_pos = max_breedte - 1200 - 20  # Plakt strak tegen de bovenrand
+for item in laad_lijst:
+    # Check of we IBC's moeten vlechten in een smalle container (2350 mm)
+    if max_breedte == 2350 and item["naam_puur"] == "IBC":
+        if ibc_paar_teller % 2 == 0:
+            # Type A paar: Onderkant is Breed (L=1000, B=1200), Bovenkant is Lang (L=1200, B=1000)
+            # Plaats de onderste IBC (Breed)
+            x_pos_onder = max(x_onder, x_boven) if ibc_paar_teller == 0 else x_onder
+            rect1 = patches.Rectangle((x_pos_onder, 20), 1000, 1200, linewidth=1, edgecolor='white', facecolor=item["kleur"], alpha=0.8)
+            ax.add_patch(rect1)
+            ax.text(x_pos_onder + 500, 20 + 600, "IBC (Breed)", color="black", weight="bold", ha="center", va="center", fontsize=7)
+            
+            # Plaats de bovenste IBC (Lang)
+            x_pos_boven = max(x_onder, x_boven) if ibc_paar_teller == 0 else x_boven
+            rect2 = patches.Rectangle((x_pos_boven, max_breedte - 1000 - 20), 1200, 1000, linewidth=1, edgecolor='white', facecolor=item["kleur"], alpha=0.8)
+            ax.add_patch(rect2)
+            ax.text(x_pos_boven + 600, max_breedte - 1000 - 20 + 500, "IBC (Lang)", color="black", weight="bold", ha="center", va="center", fontsize=7)
+            
+            x_onder = x_pos_onder + 1000
+            x_boven = x_pos_boven + 1200
         else:
-            # Standaard positionering voor CP3, CP7, etc.
-            y_pos = 20 if index == 0 else max_breedte - item["B"] - 20
+            # Type B paar (Gespiegeld): Onderkant is Lang (L=1200, B=1000), Bovenkant is Breed (L=1000, B=1200)
+            # Plaats de onderste IBC (Lang) - deze haakt perfect in het gat van de vorige rij
+            rect1 = patches.Rectangle((x_onder, 20), 1200, 1000, linewidth=1, edgecolor='white', facecolor=item["kleur"], alpha=0.8)
+            ax.add_patch(rect1)
+            ax.text(x_onder + 600, 20 + 500, "IBC (Lang)", color="black", weight="bold", ha="center", va="center", fontsize=7)
+            
+            # Plaats de bovenste IBC (Breed) - deze haakt ook in het gat aan de bovenkant
+            rect2 = patches.Rectangle((x_boven, max_breedte - 1200 - 20), 1000, 1200, linewidth=1, edgecolor='white', facecolor=item["kleur"], alpha=0.8)
+            ax.add_patch(rect2)
+            ax.text(x_boven + 500, max_breedte - 1200 - 20 + 600, "IBC (Breed)", color="black", weight="bold", ha="center", va="center", fontsize=7)
+            
+            x_onder += 1200
+            x_boven += 1000
+            
+        ibc_paar_teller += 1
         
-        rect = patches.Rectangle((huidige_x, y_pos), item["L"], item["B"], linewidth=1, edgecolor='white', facecolor=item["kleur"], alpha=0.8)
-        ax.add_patch(rect)
-        ax.text(huidige_x + (item["L"]/2), y_pos + (item["B"]/2), item["naam"], color="black", weight="bold", ha="center", va="center", fontsize=7)
+    else:
+        # Normale pallets (CP3, CP7, CP7 Smal of IBC in een brede 45ft container)
+        # Trek de frontlijn eerst gelijk naar het verste punt van de container
+        start_x = max(x_onder, x_boven)
         
-    huidige_x += rij_lengte
-    totale_meters += rij_lengte
+        if item["naam_puur"] == "CP7 Smal":
+            # CP7 Smal staat gegarandeerd alleen in het midden
+            y_pos = (max_breedte - item["B"]) / 2
+            rect = patches.Rectangle((start_x, y_pos), item["L"], item["B"], linewidth=1, edgecolor='white', facecolor=item["kleur"], alpha=0.8)
+            ax.add_patch(rect)
+            ax.text(start_x + (item["L"]/2), y_pos + (item["B"]/2), item["naam"], color="black", weight="bold", ha="center", va="center", fontsize=7)
+            
+            x_onder = start_x + item["L"]
+            x_boven = start_x + item["L"]
+        else:
+            # We plaatsen normale pallets per 2 naast elkaar. We kijken of de onderkant of bovenkant vrij is op de start_x lijn.
+            # Om het simpel en strak te houden bouwen we vanaf start_x in rijen van 2
+            # Als we nog geen lopende rij op start_x hebben, zetten we hem onderop. Als die er al staat, zetten we hem bovenop.
+            if x_onder == start_x and x_boven == start_x:
+                # Eerste pallet in de nieuwe rij (onderop)
+                rect = patches.Rectangle((start_x, 20), item["L"], item["B"], linewidth=1, edgecolor='white', facecolor=item["kleur"], alpha=0.8)
+                ax.add_patch(rect)
+                ax.text(start_x + (item["L"]/2), 20 + (item["B"]/2), item["naam"], color="black", weight="bold", ha="center", va="center", fontsize=7)
+                x_onder = start_x + item["L"]
+            else:
+                # Tweede pallet in de rij (bovenop)
+                rect = patches.Rectangle((start_x, max_breedte - item["B"] - 20), item["L"], item["B"], linewidth=1, edgecolor='white', facecolor=item["kleur"], alpha=0.8)
+                ax.add_patch(rect)
+                ax.text(start_x + (item["L"]/2), max_breedte - item["B"] - 20 + (item["B"]/2), item["naam"], color="black", weight="bold", ha="center", va="center", fontsize=7)
+                x_boven = start_x + item["L"]
+                
+                # Rij is nu vol, trek de lijn voor beide kanten gelijk naar de langste pallet in deze rij
+                max_r = max(x_onder, x_boven)
+                x_onder = max_r
+                x_boven = max_r
 
+# Eindstand bepalen van de langste laadlijn
+totale_meters = max(x_onder, x_boven)
 restruimte = max_lengte - totale_meters
 
 # 5. Resultaat tonen

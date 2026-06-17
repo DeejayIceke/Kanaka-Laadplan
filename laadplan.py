@@ -47,7 +47,7 @@ col1, col2, col3, col4 = st.columns(4)
 
 with col1:
     st.info("**CP3 (1140x1140)**")
-    pallets_cp3 = st.number_input("Hoofdaantal CP3", min_value=0, value=0, step=1, key=f"cp3_{st.session_state.reset_id}")
+    pallets_cp3 = st.number_input("Totaal aantal CP3", min_value=0, value=0, step=1, key=f"cp3_{st.session_state.reset_id}")
     as_v_cp3 = st.number_input("Midden VOORAAN", min_value=0, value=0, step=1, key=f"v_cp3_{st.session_state.reset_id}")
     as_a_cp3 = st.number_input("Midden ACHTERAAN", min_value=0, value=0, step=1, key=f"a_cp3_{st.session_state.reset_id}")
     if pallets_cp3 > 0 and "CP3" not in st.session_state.klik_volgorde:
@@ -55,15 +55,16 @@ with col1:
 
 with col2:
     st.success("**CP7 (1400x1100)**")
-    pallets_cp7 = st.number_input("Hoofdaantal CP7", min_value=0, value=0, step=1, key=f"cp7_{st.session_state.reset_id}")
+    pallets_cp7 = st.number_input("Totaal aantal CP7", min_value=0, value=0, step=1, key=f"cp7_{st.session_state.reset_id}")
     as_v_cp7 = st.number_input("Midden VOORAAN", min_value=0, value=0, step=1, key=f"v_cp7_{st.session_state.reset_id}")
     as_a_cp7 = st.number_input("Midden ACHTERAAN", min_value=0, value=0, step=1, key=f"a_cp7_{st.session_state.reset_id}")
     if pallets_cp7 > 0 and "CP7" not in st.session_state.klik_volgorde:
         st.session_state.klik_volgorde.append("CP7")
 
 with col3:
-    st.write("<div style='background-color:#9b59b6; padding:5px; border-radius:5px; color:white; font-weight:bold; text-align:center;'>CP7 Smal (1100x1400)</div>", unsafe_allow_html=True)
-    pallets_cp7_smal = st.number_input("Hoofdaantal Smal", min_value=0, value=0, step=1, key=f"cp7_smal_{st.session_state.reset_id}")
+    # Gefixt: Dit maakt de kolom van CP7 Smal nu exact even groot als de rest!
+    st.markdown("<div style='background-color:#9b59b6; padding:0.45rem; border-radius:0.5rem; color:white; font-weight:bold; font-size:14px; margin-bottom:0.25rem;'>CP7 Smal (1100x1400)</div>", unsafe_allow_html=True)
+    pallets_cp7_smal = st.number_input("Totaal aantal Smal", min_value=0, value=0, step=1, key=f"cp7_smal_{st.session_state.reset_id}")
     as_v_cp7_smal = st.number_input("Midden VOORAAN", min_value=0, value=0, step=1, key=f"v_cp7_smal_{st.session_state.reset_id}")
     as_a_cp7_smal = st.number_input("Midden ACHTERAAN", min_value=0, value=0, step=1, key=f"a_cp7_smal_{st.session_state.reset_id}")
     if pallets_cp7_smal > 0 and "CP7 Smal" not in st.session_state.klik_volgorde:
@@ -71,14 +72,20 @@ with col3:
 
 with col4:
     st.warning("**IBC (1000x1200)**")
-    pallets_ibc = st.number_input("Hoofdaantal IBC", min_value=0, value=0, step=1, key=f"ibc_{st.session_state.reset_id}")
+    pallets_ibc = st.number_input("Totaal aantal IBC", min_value=0, value=0, step=1, key=f"ibc_{st.session_state.reset_id}")
     as_v_ibc = st.number_input("Midden VOORAAN", min_value=0, value=0, step=1, key=f"v_ibc_{st.session_state.reset_id}")
     as_a_ibc = st.number_input("Midden ACHTERAAN", min_value=0, value=0, step=1, key=f"a_ibc_{st.session_state.reset_id}")
     if pallets_ibc > 0 and "IBC" not in st.session_state.klik_volgorde:
         st.session_state.klik_volgorde.append("IBC")
 
-actuele_aantallen = {"CP3": pallets_cp3, "CP7": pallets_cp7, "CP7 Smal": pallets_cp7_smal, "IBC": pallets_ibc}
-st.session_state.klik_volgorde = [art for art in st.session_state.klik_volgorde if actuele_aantallen[art] > 0]
+# FIX: Bereken het overgebleven aantal voor het normale dubbele laaddeel
+hoofd_cp3 = max(0, pallets_cp3 - as_v_cp3 - as_a_cp3)
+hoofd_cp7 = max(0, pallets_cp7 - as_v_cp7 - as_a_cp7)
+hoofd_cp7_smal = max(0, pallets_cp7_smal - as_v_cp7_smal - as_a_cp7_smal)
+hoofd_ibc = max(0, pallets_ibc - as_v_ibc - as_a_ibc)
+
+actuele_aantallen = {"CP3": hoofd_cp3, "CP7": hoofd_cp7, "CP7 Smal": hoofd_cp7_smal, "IBC": hoofd_ibc}
+st.session_state.klik_volgorde = [art for art in st.session_state.klik_volgorde if pallets_cp3+pallets_cp7+pallets_cp7_smal+pallets_ibc > 0]
 
 st.write("---")
 if st.button("🗑️ Wis alle velden (Reset naar 0)", type="primary", use_container_width=True):
@@ -198,7 +205,7 @@ totale_meters = max(x_onder, x_boven)
 restruimte = max_lengte - totale_meters
 
 st.write("### 3. Plan:")
-if st.session_state.klik_volgorde or as_v_cp3 > 0 or as_v_cp7 > 0 or as_v_cp7_smal > 0 or as_v_ibc > 0 or as_a_cp3 > 0 or as_a_cp7 > 0 or as_a_cp7_smal > 0 or as_a_ibc > 0:
+if pallets_cp3+pallets_cp7+pallets_cp7_smal+pallets_ibc > 0:
     if restruimte >= 0:
         st.success(f"✅ Past! Nog {restruimte} mm over.")
     else:

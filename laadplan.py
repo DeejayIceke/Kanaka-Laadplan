@@ -5,7 +5,7 @@ import matplotlib.patches as patches
 
 st.set_page_config(page_title="Kaneka Visueel Laadplan", layout="wide")
 st.title("📦 Kaneka Visueel Laadplan Dashboard")
-st.write("Vul direct de aantallen in. Bij 40ft/20ft containers worden IBC's automatisch geschakeld geladen.")
+st.write("Vul direct de aantallen in. Bij 40ft/20ft containers worden IBC's automatisch in elkaar gevlochten met de juiste verhoudingen.")
 
 # 1. Container Keuze
 st.subheader("1. Kies het containertype")
@@ -16,13 +16,13 @@ container_type = st.selectbox(
 
 if container_type == "45ft Container":
     max_lengte = 13550  
-    max_breedte = 2426  # Pallet Wide breedte
+    max_breedte = 2426  
 elif container_type == "40ft Container":
     max_lengte = 12030  
-    max_breedte = 2350  # Standaard containerbreedte
+    max_breedte = 2350  
 else:
     max_lengte = 5898   
-    max_breedte = 2350  # Standaard containerbreedte
+    max_breedte = 2350  
 
 st.info(f"Geselecteerde container laadruimte: **{max_lengte} mm** lang x **{max_breedte} mm** breed.")
 
@@ -40,7 +40,7 @@ product_info = {
     "IBC": {"lengte": 1000, "breedte": 1200, "kleur": "#f1c40f", "stapelbaar": False}
 }
 
-# 2. Invoer Pallets - Directe invoer naast elkaar
+# 2. Invoer Pallets
 st.subheader("2. Vul het aantal pallets in")
 col1, col2, col3, col4 = st.columns(4)
 
@@ -112,19 +112,24 @@ for item in laad_lijst:
         first_item = tijdelijke_rij[0]
         
         if not ibc_omgedraaid:
-            # Eerste ligt dwars (breed), de 2e zetten we in de lengte (lang)
+            # Eerste ligt dwars (breed=1200, lang=1000)
+            first_item["L"] = 1000
+            first_item["B"] = 1200
+            first_item["naam"] = "IBC (Breed)"
+            
+            # De 2e zetten we rechtop (breed=1000, lang=1200)
             item_gekopieerd["L"] = 1200
             item_gekopieerd["B"] = 1000
             item_gekopieerd["naam"] = "IBC (Lang)"
-            first_item["naam"] = "IBC (Breed)"
         else:
             # Rij omdraaien voor stabiele vlecht
-            item_gekopieerd["L"] = 1000
-            item_gekopieerd["B"] = 1200
-            item_gekopieerd["naam"] = "IBC (Breed)"
             first_item["L"] = 1200
             first_item["B"] = 1000
             first_item["naam"] = "IBC (Lang)"
+            
+            item_gekopieerd["L"] = 1000
+            item_gekopieerd["B"] = 1200
+            item_gekopieerd["naam"] = "IBC (Breed)"
             
         first_item["vlecht_mode"] = True
         item_gekopieerd["vlecht_mode"] = True
@@ -148,12 +153,16 @@ if tijdelijke_rij:
     rijen.append(tijdelijke_rij)
 
 # 4. Teken Layout Berekening
-fig, ax = plt.subplots(figsize=(14, 4))
+fig, ax = plt.subplots(figsize=(15, 3.5))
 ax.set_xlim(0, max_lengte)
 ax.set_ylim(0, max_breedte)
 ax.set_xlabel("Lengte container (mm)")
 ax.set_ylabel("Breedte container (mm)")
 
+# CRITIALE FIX: Dwing gelijke verhoudingen af (Schermvullend uitrekken voorkomen)
+ax.set_aspect('equal', adjustable='box')
+
+# Teken containeromtrek
 container_border = patches.Rectangle((0, 0), max_lengte, max_breedte, linewidth=2, edgecolor='black', facecolor='none')
 ax.add_patch(container_border)
 
@@ -162,22 +171,27 @@ totale_meters = 0
 
 # Teken elke rij pallets
 for rij in rijen:
-    rij_lengte = max([item["L"] for item in rij])
+    # Gecorrigeerde vlecht-lengte: twee in elkaar gehaakte rijen IBC's kosten samen exact 2200 mm laadlengte (dus gemiddeld 1100 per rij)
+    if "vlecht_mode" in rij[0] and len(rij) == 2:
+        rij_lengte = 1100
+    else:
+        rij_lengte = max([item["L"] for item in rij])
+    
     is_alleen_cp7_smal = len(rij) == 1 and rij[0]["naam_puur"] == "CP7 Smal"
     
     for index, item in enumerate(rij):
         if is_alleen_cp7_smal:
             y_pos = (max_breedte - item["B"]) / 2
         else:
-            # Gecorrigeerde positionering voor gevlochten IBC's
             if "vlecht_mode" in item:
-                y_pos = 20 if index == 0 else rij[0]["B"] + 40
+                # Gevlochten IBC's strak positioneren op basis van hun gecorrigeerde breedte
+                y_pos = 20 if index == 0 else max_breedte - item["B"] - 20
             else:
                 y_pos = 20 if index == 0 else max_breedte - item["B"] - 20
         
         rect = patches.Rectangle((huidige_x, y_pos), item["L"], item["B"], linewidth=1, edgecolor='white', facecolor=item["kleur"], alpha=0.8)
         ax.add_patch(rect)
-        ax.text(huidige_x + (item["L"]/2), y_pos + (item["B"]/2), item["naam"], color="black", weight="bold", ha="center", va="center", fontsize=8)
+        ax.text(huidige_x + (item["L"]/2), y_pos + (item["B"]/2), item["naam"], color="black", weight="bold", ha="center", va="center", fontsize=7)
         
     huidige_x += rij_lengte
     totale_meters += rij_lengte
@@ -198,3 +212,4 @@ if st.session_state.klik_volgorde:
     st.write("💡 **Legenda:** [X] Blauw = CP3 | [X] Groen = CP7 | [X] Paars = CP7 Smal | [X] Geel = IBC")
 else:
     st.info("De container is nog leeg. Gebruik de + en - knoppen bij de aantallen om direct te laden.")
+

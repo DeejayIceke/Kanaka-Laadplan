@@ -1,12 +1,25 @@
 import streamlit as st, math, matplotlib.pyplot as plt, matplotlib.patches as patches
 st.set_page_config(page_title="Fons Laadplan", layout="wide")
 st.markdown("<style>.block-container { padding-top: 1rem !important; } div[data-testid='stNotification'] { background-color: #9b59b6 !important; color: white !important; }</style>", unsafe_allow_html=True)
-st.title("Fons Laadplan 1.0 🚛")
 
-container_type = st.selectbox("1. Kies container:", ["45ft Container", "40ft Container", "20ft Container"])
-max_lengte = 13550 if container_type == "45ft Container" else 12030 if container_type == "40ft Container" else 5898
-max_breedte = 2426 if container_type == "45ft Container" else 2350
-st.caption(f"📐 Formaat: {max_lengte} mm lang x {max_breedte} mm breed.")
+# Aangepast: Titel zonder 1.0
+st.title("Fons Laadplan 🚛")
+
+# Aangepast: Maten direct tussen haakjes in het meerkeuzemenu gezet
+container_type = st.selectbox(
+    "1. Kies container:", 
+    ["45ft Container (13550 x 2426 mm)", "40ft Container (12030 x 2350 mm)", "20ft Container (5898 x 2350 mm)"]
+)
+
+if "45ft" in container_type:
+    max_lengte = 13550  
+    max_breedte = 2426  
+elif "40ft" in container_type:
+    max_lengte = 12030  
+    max_breedte = 2350  
+else:
+    max_lengte = 5898   
+    max_breedte = 2350  
 
 if "klik_volgorde" not in st.session_state: st.session_state.klik_volgorde = []
 if "reset_id" not in st.session_state: st.session_state.reset_id = 0
@@ -18,7 +31,8 @@ product_info = {
     "IBC": {"lengte": 1000, "breedte": 1200, "kleur": "#f1c40f", "stapelbaar": False}
 }
 
-st.write("### 2. Vul hoofdaantallen in:")
+# Aangepast: Tekst veranderd naar 'Vul aantal pallets in'
+st.write("### 2. Vul aantal pallets in:")
 col1, col2, col3, col4 = st.columns(4)
 
 with col1:
@@ -41,18 +55,15 @@ with col4:
     pallets_ibc = st.number_input("Totaal aantal IBC", min_value=0, value=0, step=1, key=f"ibc_{st.session_state.reset_id}")
     if pallets_ibc > 0 and "IBC" not in st.session_state.klik_volgorde: st.session_state.klik_volgorde.append("IBC")
 
-# Initialiseer aslast-variabelen standaard op 0
 as_v_cp3, as_a_cp3 = 0, 0
 as_v_cp7, as_a_cp7 = 0, 0
 as_v_cp7_smal, as_a_cp7_smal = 0, 0
 as_v_ibc, as_a_ibc = 0, 0
 
-# GEFIXT: De aslast-velden zitten nu netjes verborgen in een inklapbaar iPhone-menu!
 if pallets_cp3 > 0 or pallets_cp7 > 0 or pallets_cp7_smal > 0 or pallets_ibc > 0:
     with st.expander("⚖️ Klik hier voor extra aslast-regelingen (Midden vooraan/achteraan)"):
         st.write("Stuur hier de pallets naar het midden van de container. Dit wordt direct afgetrokken van het totaal.")
         v_col1, v_col2, v_col3, v_col4 = st.columns(4)
-        
         with v_col1:
             if pallets_cp3 > 0:
                 as_v_cp3 = st.number_input("CP3 Midden VOORAAN", min_value=0, max_value=pallets_cp3, value=0, step=1, key=f"v_cp3_{st.session_state.reset_id}")

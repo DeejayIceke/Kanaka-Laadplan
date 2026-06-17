@@ -7,19 +7,24 @@ st.set_page_config(page_title="Kaneka Visueel Laadplan", layout="wide")
 st.title("📦 Kaneka Visueel Laadplan Dashboard")
 st.write("Bereken de resterende ruimte en bekijk de visuele indeling van de container.")
 
-# 1. Container Keuze
+# 1. Container Keuze op basis van jouw exacte tabel
 st.subheader("1. Kies het containertype")
-container_type = st.selectbox("Containertype", ["45ft Container", "40ft Container", "20ft Container"])
+container_type = st.selectbox(
+    "Containertype", 
+    ["45ft HC PW 9.1", "40ft HC PW 9.6", "40ft Open Top"]
+)
 
-# Container maten bepalen (Lengte x Breedte in mm)
-if container_type == "45ft Container":
-    max_lengte = 13550
-elif container_type == "40ft Container":
-    max_lengte = 12030
+# Exacte maten toewijzen uit jouw tabel (Lengte x Breedte in mm)
+if container_type == "45ft HC PW 9.1":
+    max_lengte = 13550  # Binnenmaat laadlengte
+    max_breedte = 2426  # Exact uit jouw tabel
+elif container_type == "40ft HC PW 9.6":
+    max_lengte = 12030  # Binnenmaat laadlengte
+    max_breedte = 2440  # Exact uit jouw tabel
 else:
-    max_lengte = 5898
+    max_lengte = 12030  # Binnenmaat laadlengte
+    max_breedte = 2345  # Exact uit jouw tabel
 
-max_breedte = 2350  # Binnenbreedte container
 st.info(f"Geselecteerde container laadruimte: **{max_lengte} mm** lang x **{max_breedte} mm** breed.")
 
 # 2. Invoer Pallets
@@ -58,18 +63,16 @@ for art in artikelen:
 # Sorteer op lengte (langste eerst) voor een logische laadvolgorde
 laad_lijst.sort(key=lambda x: x["L"], reverse=True)
 
-# Slimme breedte-planning: Pallets in rijen plaatsen op basis van de containerbreedte (2350 mm)
+# Slimme breedte-planning: Pallets in rijen plaatsen op basis van de containerbreedte
 rijen = []
 tijdelijke_rij = []
 huidige_breedte_in_rij = 0
 
 for item in laad_lijst:
-    # Als het item in de huidige rij past qua breedte én er staan minder dan 2 items in de rij
     if (huidige_breedte_in_rij + item["B"] <= max_breedte) and (len(tijdelijke_rij) < 2):
         tijdelijke_rij.append(item)
         huidige_breedte_in_rij += item["B"]
     else:
-        # Rij is vol of item past niet qua breedte (zoals een tweede CP7 Smal) -> start nieuwe rij
         if tijdelijke_rij:
             rijen.append(tijdelijke_rij)
         tijdelijke_rij = [item]
@@ -96,9 +99,16 @@ totale_meters = 0
 for rij in rijen:
     rij_lengte = max([item["L"] for item in rij])
     
+    # Gecorrigeerd: Check correct via het eerste item in de lijst van de rij
+    is_alleen_cp7_smal = len(rij) == 1 and rij[0]["naam"] == "CP7 Smal"
+    
     for index, item in enumerate(rij):
-        # Eerste item onderaan, tweede item bovenaan de container geplaatst
-        y_pos = 50 if index == 0 else max_breedte - item["B"] - 50
+        if is_alleen_cp7_smal:
+            # Bereken het exacte midden voor de gewichtsverdeling
+            y_pos = (max_breedte - item["B"]) / 2
+        else:
+            # Normale verdeling: Eerste item onderaan, tweede item bovenaan
+            y_pos = 20 if index == 0 else max_breedte - item["B"] - 20
         
         rect = patches.Rectangle((huidige_x, y_pos), item["L"], item["B"], linewidth=1, edgecolor='white', facecolor=item["kleur"], alpha=0.8)
         ax.add_patch(rect)

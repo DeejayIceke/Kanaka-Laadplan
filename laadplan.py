@@ -3,14 +3,21 @@ import math
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 
-st.set_page_config(page_title="Kaneka Visueel Laadplan", layout="wide")
-st.title("📦 Kaneka Visueel Laadplan Dashboard")
-st.write("Vul direct de aantallen in. Bij 40ft/20ft containers vlechtten de IBC's nu mathematisch perfect in elkaar.")
+# Compacte pagina-instelling
+st.set_page_config(page_title="Fons Laadplan", layout="wide")
+
+# CSS om de lege witruimte aan de bovenkant van het scherm op de iPhone te verminderen
+st.markdown("""
+    <style>
+        .block-container { padding-top: 1rem !important; padding-bottom: 1rem !important; }
+    </style>
+""", unsafe_allow_html=True)
+
+st.title("Fons Laadplan 🚛")
 
 # 1. Container Keuze
-st.subheader("1. Kies het containertype")
 container_type = st.selectbox(
-    "Containertype", 
+    "1. Kies container:", 
     ["45ft Container", "40ft Container", "20ft Container"]
 )
 
@@ -24,7 +31,7 @@ else:
     max_lengte = 5898   
     max_breedte = 2350  
 
-st.info(f"Geselecteerde container laadruimte: **{max_lengte} mm** lang x **{max_breedte} mm** breed.")
+st.caption(f"📐 Formaat: {max_lengte} mm lang x {max_breedte} mm breed.")
 
 # Initialiseer de tracking van volgorde en aantallen
 if "klik_volgorde" not in st.session_state:
@@ -41,7 +48,7 @@ product_info = {
 }
 
 # 2. Invoer Pallets
-st.subheader("2. Vul het aantal pallets in")
+st.write("### 2. Vul aantallen in:")
 col1, col2, col3, col4 = st.columns(4)
 
 with col1:
@@ -67,14 +74,12 @@ with col4:
 actuele_aantallen = {"CP3": pallets_cp3, "CP7": pallets_cp7, "CP7 Smal": pallets_cp7_smal, "IBC": pallets_ibc}
 st.session_state.klik_volgorde = [art for art in st.session_state.klik_volgorde if actuele_aantallen[art] > 0]
 
-# De WISKNOP
-st.write("---")
-if st.button("🗑️ Wis alle velden en container (Reset volledig naar 0)", type="primary", use_container_width=True):
+if st.button("🗑️ Wis alles (Reset naar 0)", type="primary", use_container_width=True):
     st.session_state.klik_volgorde = []
     st.session_state.reset_id += 1
     st.rerun()
 
-# 3. Logistieke Logica: Bouw de laadlijst op
+# 3. Logistieke Logica: Bouw de individuele vloerplaatsen op
 laad_lijst = []
 for art_naam in st.session_state.klik_volgorde:
     total_pallets = actuele_aantallen[art_naam]
@@ -101,8 +106,6 @@ for art_naam in st.session_state.klik_volgorde:
 fig, ax = plt.subplots(figsize=(15, 3.5))
 ax.set_xlim(0, max_lengte)
 ax.set_ylim(0, max_breedte)
-ax.set_xlabel("Lengte container (mm)")
-ax.set_ylabel("Breedte container (mm)")
 ax.set_aspect('equal', adjustable='box')
 
 container_border = patches.Rectangle((0, 0), max_lengte, max_breedte, linewidth=2, edgecolor='black', facecolor='none')
@@ -199,15 +202,15 @@ totale_meters = max(x_onder, x_boven)
 restruimte = max_lengte - totale_meters
 
 # 5. Resultaat tonen
-st.subheader("3. Resultaat & Visuele Indeling")
+st.write("### 3. Plan:")
 
 if st.session_state.klik_volgorde:
     if restruimte >= 0:
-        st.success(f"Dit past! Je hebt nog {restruimte} mm over in de container.")
+        st.success(f"✅ Past! Nog {restruimte} mm over.")
     else:
-        st.error(f"Dit past NIET! Je komt {abs(restruimte)} mm tekort.")
+        st.error(f"❌ Past NIET! {abs(restruimte)} mm tekort.")
     st.pyplot(fig)
-    st.write(f"**Gebruikte lengte:** {totale_meters} mm van de {max_lengte} mm.")
-    st.write("💡 **Legenda:** [X] Blauw = CP3 | [X] Groen = CP7 | [X] Paars = CP7 Smal | [X] Geel = IBC")
+    st.write(f"**Geladen:** {totale_meters} mm van {max_lengte} mm.")
+    st.write("💡 **Legenda:** [X] Blauw=CP3 | [X] Groen=CP7 | [X] Paars=CP7 Smal | [X] Geel=IBC")
 else:
-    st.info("De container is nog leeg. Gebruik de + en - knoppen bij de aantallen om direct te laden.")
+    st.info("Container is leeg. Gebruik de + en - knoppen om te beginnen.")

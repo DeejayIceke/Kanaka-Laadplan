@@ -108,82 +108,101 @@ ax.set_aspect('equal', adjustable='box')
 container_border = patches.Rectangle((0, 0), max_lengte, max_breedte, linewidth=2, edgecolor='black', facecolor='none')
 ax.add_patch(container_border)
 
-# Onafhankelijke tracking van de laadlijnen (onderkant vs bovenkant van de container)
+# Tracking van laadlijnen
 x_onder = 0
 x_boven = 0
 ibc_paar_teller = 0
 
-for item in laad_lijst:
+# We gebruiken een index-loop om handmatig door de laadlijst te springen
+idx = 0
+while idx < len(laad_lijst):
+    item = laad_lijst[idx]
+    
     # Check of we IBC's moeten vlechten in een smalle container (2350 mm)
     if max_breedte == 2350 and item["naam_puur"] == "IBC":
-        if ibc_paar_teller % 2 == 0:
-            # Type A paar: Onderkant is Breed (L=1000, B=1200), Bovenkant is Lang (L=1200, B=1000)
-            # Plaats de onderste IBC (Breed)
-            x_pos_onder = max(x_onder, x_boven) if ibc_paar_teller == 0 else x_onder
-            rect1 = patches.Rectangle((x_pos_onder, 20), 1000, 1200, linewidth=1, edgecolor='white', facecolor=item["kleur"], alpha=0.8)
-            ax.add_patch(rect1)
-            ax.text(x_pos_onder + 500, 20 + 600, "IBC (Breed)", color="black", weight="bold", ha="center", va="center", fontsize=7)
-            
-            # Plaats de bovenste IBC (Lang)
-            x_pos_boven = max(x_onder, x_boven) if ibc_paar_teller == 0 else x_boven
-            rect2 = patches.Rectangle((x_pos_boven, max_breedte - 1000 - 20), 1200, 1000, linewidth=1, edgecolor='white', facecolor=item["kleur"], alpha=0.8)
-            ax.add_patch(rect2)
-            ax.text(x_pos_boven + 600, max_breedte - 1000 - 20 + 500, "IBC (Lang)", color="black", weight="bold", ha="center", va="center", fontsize=7)
-            
-            x_onder = x_pos_onder + 1000
-            x_boven = x_pos_boven + 1200
-        else:
-            # Type B paar (Gespiegeld): Onderkant is Lang (L=1200, B=1000), Bovenkant is Breed (L=1000, B=1200)
-            # Plaats de onderste IBC (Lang) - deze haakt perfect in het gat van de vorige rij
-            rect1 = patches.Rectangle((x_onder, 20), 1200, 1000, linewidth=1, edgecolor='white', facecolor=item["kleur"], alpha=0.8)
-            ax.add_patch(rect1)
-            ax.text(x_onder + 600, 20 + 500, "IBC (Lang)", color="black", weight="bold", ha="center", va="center", fontsize=7)
-            
-            # Plaats de bovenste IBC (Breed) - deze haakt ook in het gat aan de bovenkant
-            rect2 = patches.Rectangle((x_boven, max_breedte - 1200 - 20), 1000, 1200, linewidth=1, edgecolor='white', facecolor=item["kleur"], alpha=0.8)
-            ax.add_patch(rect2)
-            ax.text(x_boven + 500, max_breedte - 1200 - 20 + 600, "IBC (Breed)", color="black", weight="bold", ha="center", va="center", fontsize=7)
-            
-            x_onder += 1200
-            x_boven += 1000
-            
-        ibc_paar_teller += 1
+        # CRUCIALE FIX: Kijk of er nog een TWEEDE IBC beschikbaar is in de lijst
+        heeft_partner = (idx + 1 < len(laad_lijst) and laad_lijst[idx+1]["naam_puur"] == "IBC")
         
+        if heeft_partner:
+            if ibc_paar_teller % 2 == 0:
+                # Type A paar: Onderkant Breed, Bovenkant Lang
+                x_pos_onder = max(x_onder, x_boven) if ibc_paar_teller == 0 else x_onder
+                rect1 = patches.Rectangle((x_pos_onder, 20), 1000, 1200, linewidth=1, edgecolor='white', facecolor=item["kleur"], alpha=0.8)
+                ax.add_patch(rect1)
+                ax.text(x_pos_onder + 500, 20 + 600, "IBC (Breed)", color="black", weight="bold", ha="center", va="center", fontsize=7)
+                
+                x_pos_boven = max(x_onder, x_boven) if ibc_paar_teller == 0 else x_boven
+                rect2 = patches.Rectangle((x_pos_boven, max_breedte - 1000 - 20), 1200, 1000, linewidth=1, edgecolor='white', facecolor=item["kleur"], alpha=0.8)
+                ax.add_patch(rect2)
+                ax.text(x_pos_boven + 600, max_breedte - 1000 - 20 + 500, "IBC (Lang)", color="black", weight="bold", ha="center", va="center", fontsize=7)
+                
+                x_onder = x_pos_onder + 1000
+                x_boven = x_pos_boven + 1200
+            else:
+                # Type B paar (Gespiegeld): Onderkant Lang, Bovenkant Breed
+                rect1 = patches.Rectangle((x_onder, 20), 1200, 1000, linewidth=1, edgecolor='white', facecolor=item["kleur"], alpha=0.8)
+                ax.add_patch(rect1)
+                ax.text(x_onder + 600, 20 + 500, "IBC (Lang)", color="black", weight="bold", ha="center", va="center", fontsize=7)
+                
+                rect2 = patches.Rectangle((x_boven, max_breedte - 1200 - 20), 1000, 1200, linewidth=1, edgecolor='white', facecolor=item["kleur"], alpha=0.8)
+                ax.add_patch(rect2)
+                ax.text(x_boven + 500, max_breedte - 1200 - 20 + 600, "IBC (Breed)", color="black", weight="bold", ha="center", va="center", fontsize=7)
+                
+                x_onder += 1200
+                x_boven += 1000
+                
+            ibc_paar_teller += 1
+            idx += 2  # FIX: We springen met 2 tegelijk door de lijst omdat we een PAAR hebben getekend!
+            continue
+        else:
+            # Losse overgebleven enkele IBC (geen partner): behandel als normale losse pallet
+            start_x = max(x_onder, x_boven)
+            rect = patches.Rectangle((start_x, 20), 1000, 1200, linewidth=1, edgecolor='white', facecolor=item["kleur"], alpha=0.8)
+            ax.add_patch(rect)
+            ax.text(start_x + 500, 20 + 600, "IBC (Breed)", color="black", weight="bold", ha="center", va="center", fontsize=7)
+            x_onder = start_x + 1000
+            x_boven = start_x  # Bovenkant blijft vrij voor eventuele volgende mix-rij
+            idx += 1
+            continue
+            
     else:
-        # Normale pallets (CP3, CP7, CP7 Smal of IBC in een brede 45ft container)
-        # Trek de frontlijn eerst gelijk naar het verste punt van de container
+        # Normale pallets (CP3, CP7, CP7 Smal)
         start_x = max(x_onder, x_boven)
         
         if item["naam_puur"] == "CP7 Smal":
-            # CP7 Smal staat gegarandeerd alleen in het midden
             y_pos = (max_breedte - item["B"]) / 2
             rect = patches.Rectangle((start_x, y_pos), item["L"], item["B"], linewidth=1, edgecolor='white', facecolor=item["kleur"], alpha=0.8)
             ax.add_patch(rect)
             ax.text(start_x + (item["L"]/2), y_pos + (item["B"]/2), item["naam"], color="black", weight="bold", ha="center", va="center", fontsize=7)
-            
             x_onder = start_x + item["L"]
             x_boven = start_x + item["L"]
+            idx += 1
         else:
-            # We plaatsen normale pallets per 2 naast elkaar. We kijken of de onderkant of bovenkant vrij is op de start_x lijn.
-            # Om het simpel en strak te houden bouwen we vanaf start_x in rijen van 2
-            # Als we nog geen lopende rij op start_x hebben, zetten we hem onderop. Als die er al staat, zetten we hem bovenop.
-            if x_onder == start_x and x_boven == start_x:
-                # Eerste pallet in de nieuwe rij (onderop)
-                rect = patches.Rectangle((start_x, 20), item["L"], item["B"], linewidth=1, edgecolor='white', facecolor=item["kleur"], alpha=0.8)
-                ax.add_patch(rect)
-                ax.text(start_x + (item["L"]/2), 20 + (item["B"]/2), item["naam"], color="black", weight="bold", ha="center", va="center", fontsize=7)
-                x_onder = start_x + item["L"]
-            else:
-                # Tweede pallet in de rij (bovenop)
-                rect = patches.Rectangle((start_x, max_breedte - item["B"] - 20), item["L"], item["B"], linewidth=1, edgecolor='white', facecolor=item["kleur"], alpha=0.8)
-                ax.add_patch(rect)
-                ax.text(start_x + (item["L"]/2), max_breedte - item["B"] - 20 + (item["B"]/2), item["naam"], color="black", weight="bold", ha="center", va="center", fontsize=7)
-                x_boven = start_x + item["L"]
+            # Pallets per 2 naast elkaar plaatsen
+            heeft_buur = (idx + 1 < len(laad_lijst) and laad_lijst[idx+1]["naam_puur"] != "CP7 Smal")
+            
+            # Teken de eerste pallet (onderop)
+            rect1 = patches.Rectangle((start_x, 20), item["L"], item["B"], linewidth=1, edgecolor='white', facecolor=item["kleur"], alpha=0.8)
+            ax.add_patch(rect1)
+            ax.text(start_x + (item["L"]/2), 20 + (item["B"]/2), item["naam"], color="black", weight="bold", ha="center", va="center", fontsize=7)
+            
+            if heeft_buur:
+                # Teken de buurman direct in dezelfde rij (bovenop)
+                item2 = laad_lijst[idx+1]
+                rect2 = patches.Rectangle((start_x, max_breedte - item2["B"] - 20), item2["L"], item2["B"], linewidth=1, edgecolor='white', facecolor=item2["kleur"], alpha=0.8)
+                ax.add_patch(rect2)
+                ax.text(start_x + (item2["L"]/2), max_breedte - item2["B"] - 20 + (item2["B"]/2), item2["naam"], color="black", weight="bold", ha="center", va="center", fontsize=7)
                 
-                # Rij is nu vol, trek de lijn voor beide kanten gelijk naar de langste pallet in deze rij
+                x_onder = start_x + item["L"]
+                x_boven = start_x + item2["L"]
                 max_r = max(x_onder, x_boven)
                 x_onder = max_r
                 x_boven = max_r
+                idx += 2
+            else:
+                x_onder = start_x + item["L"]
+                x_boven = start_x
+                idx += 1
 
 # Eindstand bepalen van de langste laadlijn
 totale_meters = max(x_onder, x_boven)
@@ -194,12 +213,3 @@ st.subheader("3. Resultaat & Visuele Indeling")
 
 if st.session_state.klik_volgorde:
     if restruimte >= 0:
-        st.success(f"Dit past! Je hebt nog {restruimte} mm over in de container.")
-    else:
-        st.error(f"Dit past NIET! Je komt {abs(restruimte)} mm tekort.")
-
-    st.pyplot(fig)
-    st.write(f"**Gebruikte lengte:** {totale_meters} mm van de {max_lengte} mm.")
-    st.write("💡 **Legenda:** [X] Blauw = CP3 | [X] Groen = CP7 | [X] Paars = CP7 Smal | [X] Geel = IBC")
-else:
-    st.info("De container is nog leeg. Gebruik de + en - knoppen bij de aantallen om direct te laden.")

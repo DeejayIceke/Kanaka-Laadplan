@@ -1,12 +1,7 @@
-
-
-
-
-
 import streamlit as st, math, matplotlib.pyplot as plt, matplotlib.patches as patches
 st.set_page_config(page_title="Fons Laadplan", layout="wide")
 st.markdown("<style>.block-container { padding-top: 1rem !important; } div[data-testid='stNotification'] { background-color: #9b59b6 !important; color: white !important; }</style>", unsafe_allow_html=True)
-st.title("Fons Laadplan 1.0 🚛")
+st.title("Fons Laadplan 1.0 100% 🚛")
 
 container_type = st.selectbox("1. Kies container:", ["45ft Container", "40ft Container", "20ft Container"])
 max_lengte = 13550 if container_type == "45ft Container" else 12030 if container_type == "40ft Container" else 5898
@@ -55,7 +50,6 @@ hoofd_cp7 = max(0, pallets_cp7 - as_v_cp7 - as_a_cp7)
 hoofd_cp7_smal = max(0, pallets_cp7_smal - as_v_cp7_smal - as_a_cp7_smal)
 hoofd_ibc = max(0, pallets_ibc - as_v_ibc - as_a_ibc)
 actuele_aantallen = {"CP3": hoofd_cp3, "CP7": hoofd_cp7, "CP7 Smal": hoofd_cp7_smal, "IBC": hoofd_ibc}
-st.session_state.klik_volgorde = [art for art in st.session_state.klik_volgorde if pallets_cp3+pallets_cp7+pallets_cp7_smal+pallets_ibc > 0]
 
 st.write("---")
 if st.button("🗑️ Wis alle velden (Reset naar 0)", type="primary", use_container_width=True):
@@ -84,7 +78,6 @@ voeg_partij_toe("CP3", as_a_cp3, force_midden=True)
 voeg_partij_toe("CP7", as_a_cp7, force_midden=True)
 voeg_partij_toe("CP7 Smal", as_a_cp7_smal, force_midden=True)
 voeg_partij_toe("IBC", as_a_ibc, force_midden=True)
-
 fig, ax = plt.subplots(figsize=(15, 3.5))
 ax.set_xlim(0, max_lengte); ax.set_ylim(0, max_breedte); ax.set_aspect('equal', adjustable='box')
 container_border = patches.Rectangle((0, 0), max_lengte, max_breedte, linewidth=2, edgecolor='black', facecolor='none')
@@ -147,4 +140,5 @@ if pallets_cp3+pallets_cp7+pallets_cp7_smal+pallets_ibc > 0 or as_v_cp3+as_v_cp7
     else: st.error(f"❌ Past NIET! {abs(restruimte)} mm tekort.")
     st.pyplot(fig)
     st.write(f"**Geladen:** {totale_meters} mm van {max_lengte} mm.")
-st.write("💡 Legenda: [X] Blauw=CP3 | [X] Groen=CP7 | [X] Paars=CP7 Smal | [X] Geel=IBC")else: st.info("Container is leeg. Gebruik de + en - knoppen om te beginnen.")
+    st.write("💡 **Legenda:** [X] Blauw=CP3 | [X] Groen=CP7 | [X] Paars=CP7 Smal | [X] Geel=IBC")
+else: st.info("Container is leeg. Gebruik de + en - knoppen om te beginnen.")

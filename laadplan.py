@@ -2,7 +2,7 @@ import streamlit as st, math, matplotlib.pyplot as plt, matplotlib.patches as pa
 st.set_page_config(page_title="Fons Laadplan", layout="wide")
 st.markdown("<style>.block-container { padding-top: 1rem !important; } div[data-testid='stNotification'] { background-color: #9b59b6 !important; color: white !important; }</style>", unsafe_allow_html=True)
 
-st.title("Fons Laadplan 🚛")
+st.title("Fons Laadplan 1.0 🚛")
 
 container_type = st.selectbox(
     "1. Kies container:", 
@@ -29,7 +29,8 @@ product_info = {
     "IBC": {"lengte": 1000, "breedte": 1200, "kleur": "#f1c40f", "stapelbaar": False}
 }
 
-col_titel, col_wis = st.columns()
+# GEFIXT: De haakjes zijn nu ingevuld met een verhouding [4, 1] zodat Streamlit niet meer crasht!
+col_titel, col_wis = st.columns([4, 1])
 with col_titel:
     st.write("### 2. Vul aantal pallets in:")
 with col_wis:
@@ -67,7 +68,7 @@ as_v_ibc, as_a_ibc = 0, 0
 
 if pallets_cp3 > 0 or pallets_cp7 > 0 or pallets_cp7_smal > 0 or pallets_ibc > 0:
     with st.expander("⚖️ Klik hier voor extra aslast-regelingen (Midden vooraan/achteraan)"):
-        st.write("Stuur hier de pallets naar het midden van de container. Dit wordt direct afgetrokken van het totaal.")
+        st.write("Stuur hier de pallets naar het midden van the container. Dit wordt direct afgetrokken van het totaal.")
         v_col1, v_col2, v_col3, v_col4 = st.columns(4)
         with v_col1:
             if pallets_cp3 > 0:
@@ -126,7 +127,6 @@ while idx < len(laad_lijst):
     
     if item["force_midden"] or item["naam_puur"] == "CP7 Smal":
         start_x = max(x_onder, x_boven)
-        # Check of de pallet buiten de container valt -> Maak Rood
         vulling_kleur = "#e74c3c" if (start_x + item["L"] > max_lengte) else item["kleur"]
         
         y_pos = (max_breedte - item["B"]) / 2
@@ -169,7 +169,6 @@ while idx < len(laad_lijst):
     start_x = max(x_onder, x_boven)
     heeft_buur = (idx + 1 < len(laad_lijst) and laad_lijst[idx+1]["naam_puur"] != "CP7 Smal" and not laad_lijst[idx+1]["force_midden"])
     
-    # Check of de pallet buiten de container valt -> Maak Rood
     vulling_kleur1 = "#e74c3c" if (start_x + item["L"] > max_lengte) else item["kleur"]
     rect1 = patches.Rectangle((start_x, 20), item["L"], item["B"], linewidth=1, edgecolor='white', facecolor=vulling_kleur1, alpha=0.8)
     ax.add_patch(rect1)

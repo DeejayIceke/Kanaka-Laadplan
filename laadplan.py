@@ -1,7 +1,7 @@
 import streamlit as st, math, matplotlib.pyplot as plt, matplotlib.patches as patches
 st.set_page_config(page_title="Fons Laadplan", layout="wide")
 st.markdown("<style>.block-container { padding-top: 1rem !important; } div[data-testid='stNotification'] { background-color: #9b59b6 !important; color: white !important; }</style>", unsafe_allow_html=True)
-st.title("Fons Laadplan 1.0 100% 🚛")
+st.title("Fons Laadplan 1.0 🚛")
 
 container_type = st.selectbox("1. Kies container:", ["45ft Container", "40ft Container", "20ft Container"])
 max_lengte = 13550 if container_type == "45ft Container" else 12030 if container_type == "40ft Container" else 5898
@@ -11,8 +11,9 @@ st.caption(f"📐 Formaat: {max_lengte} mm lang x {max_breedte} mm breed.")
 if "klik_volgorde" not in st.session_state: st.session_state.klik_volgorde = []
 if "reset_id" not in st.session_state: st.session_state.reset_id = 0
 
+# AANGEPAST: CP3 is nu ingesteld op 1150 x 1150 mm
 product_info = {
-    "CP3": {"lengte": 1140, "breedte": 1140, "kleur": "#3498db", "stapelbaar": False},
+    "CP3": {"lengte": 1150, "breedte": 1150, "kleur": "#3498db", "stapelbaar": False},
     "CP7": {"lengte": 1400, "breedte": 1100, "kleur": "#2ecc71", "stapelbaar": True},
     "CP7 Smal": {"lengte": 1100, "breedte": 1400, "kleur": "#9b59b6", "stapelbaar": True},
     "IBC": {"lengte": 1000, "breedte": 1200, "kleur": "#f1c40f", "stapelbaar": False}
@@ -21,7 +22,7 @@ product_info = {
 st.write("### 2. Vul aantallen in per artikel:")
 col1, col2, col3, col4 = st.columns(4)
 with col1:
-    st.info("**CP3 (1140x1140)**")
+    st.info("**CP3 (1150x1150)**")
     pallets_cp3 = st.number_input("Totaal aantal CP3", min_value=0, value=0, step=1, key=f"cp3_{st.session_state.reset_id}")
     as_v_cp3 = st.number_input("Midden VOORAAN", min_value=0, value=0, step=1, key=f"v_cp3_{st.session_state.reset_id}")
     as_a_cp3 = st.number_input("Midden ACHTERAAN", min_value=0, value=0, step=1, key=f"a_cp3_{st.session_state.reset_id}")

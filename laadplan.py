@@ -111,7 +111,9 @@ totale_meters = 0
 # Teken elke rij pallets
 for rij in rijen:
     rij_lengte = max([item["L"] for item in rij])
-    is_alleen_cp7_smal = len(rij) == 1 and rij["naam_puur"] == "CP7 Smal"
+    
+    # Gecorrigeerd: Kijk naar het eerste item in de rij (rij[0]) in plaats van de hele lijst
+    is_alleen_cp7_smal = len(rij) == 1 and rij[0]["naam_puur"] == "CP7 Smal"
     
     for index, item in enumerate(rij):
         if is_alleen_cp7_smal:

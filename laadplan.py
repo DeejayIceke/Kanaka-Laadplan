@@ -11,7 +11,6 @@ st.caption(f"📐 Formaat: {max_lengte} mm lang x {max_breedte} mm breed.")
 if "klik_volgorde" not in st.session_state: st.session_state.klik_volgorde = []
 if "reset_id" not in st.session_state: st.session_state.reset_id = 0
 
-# AANGEPAST: CP3 is nu ingesteld op 1150 x 1150 mm
 product_info = {
     "CP3": {"lengte": 1150, "breedte": 1150, "kleur": "#3498db", "stapelbaar": False},
     "CP7": {"lengte": 1400, "breedte": 1100, "kleur": "#2ecc71", "stapelbaar": True},
@@ -21,30 +20,44 @@ product_info = {
 
 st.write("### 2. Vul aantallen in per artikel:")
 col1, col2, col3, col4 = st.columns(4)
+
+# Initialiseer de aslast-variabelen vooraf op 0 voor het geval ze verborgen blijven
+as_v_cp3, as_a_cp3 = 0, 0
+as_v_cp7, as_a_cp7 = 0, 0
+as_v_cp7_smal, as_a_cp7_smal = 0, 0
+as_v_ibc, as_a_ibc = 0, 0
+
 with col1:
     st.info("**CP3 (1150x1150)**")
     pallets_cp3 = st.number_input("Totaal aantal CP3", min_value=0, value=0, step=1, key=f"cp3_{st.session_state.reset_id}")
-    as_v_cp3 = st.number_input("Midden VOORAAN", min_value=0, value=0, step=1, key=f"v_cp3_{st.session_state.reset_id}")
-    as_a_cp3 = st.number_input("Midden ACHTERAAN", min_value=0, value=0, step=1, key=f"a_cp3_{st.session_state.reset_id}")
-    if pallets_cp3 > 0 and "CP3" not in st.session_state.klik_volgorde: st.session_state.klik_volgorde.append("CP3")
+    if pallets_cp3 > 0:
+        if "CP3" not in st.session_state.klik_volgorde: st.session_state.klik_volgorde.append("CP3")
+        as_v_cp3 = st.number_input("Midden VOORAAN", min_value=0, max_value=pallets_cp3, value=0, step=1, key=f"v_cp3_{st.session_state.reset_id}")
+        as_a_cp3 = st.number_input("Midden ACHTERAAN", min_value=0, max_value=pallets_cp3 - as_v_cp3, value=0, step=1, key=f"a_cp3_{st.session_state.reset_id}")
+
 with col2:
     st.success("**CP7 (1400x1100)**")
     pallets_cp7 = st.number_input("Totaal aantal CP7", min_value=0, value=0, step=1, key=f"cp7_{st.session_state.reset_id}")
-    as_v_cp7 = st.number_input("Midden VOORAAN", min_value=0, value=0, step=1, key=f"v_cp7_{st.session_state.reset_id}")
-    as_a_cp7 = st.number_input("Midden ACHTERAAN", min_value=0, value=0, step=1, key=f"a_cp7_{st.session_state.reset_id}")
-    if pallets_cp7 > 0 and "CP7" not in st.session_state.klik_volgorde: st.session_state.klik_volgorde.append("CP7")
+    if pallets_cp7 > 0:
+        if "CP7" not in st.session_state.klik_volgorde: st.session_state.klik_volgorde.append("CP7")
+        as_v_cp7 = st.number_input("Midden VOORAAN", min_value=0, max_value=pallets_cp7, value=0, step=1, key=f"v_cp7_{st.session_state.reset_id}")
+        as_a_cp7 = st.number_input("Midden ACHTERAAN", min_value=0, max_value=pallets_cp7 - as_v_cp7, value=0, step=1, key=f"a_cp7_{st.session_state.reset_id}")
+
 with col3:
     st.info("**CP7 Smal (1100x1400)**")
     pallets_cp7_smal = st.number_input("Totaal aantal Smal", min_value=0, value=0, step=1, key=f"cp7_smal_{st.session_state.reset_id}")
-    as_v_cp7_smal = st.number_input("Midden VOORAAN", min_value=0, value=0, step=1, key=f"v_cp7_smal_{st.session_state.reset_id}")
-    as_a_cp7_smal = st.number_input("Midden ACHTERAAN", min_value=0, value=0, step=1, key=f"a_cp7_smal_{st.session_state.reset_id}")
-    if pallets_cp7_smal > 0 and "CP7 Smal" not in st.session_state.klik_volgorde: st.session_state.klik_volgorde.append("CP7 Smal")
+    if pallets_cp7_smal > 0:
+        if "CP7 Smal" not in st.session_state.klik_volgorde: st.session_state.klik_volgorde.append("CP7 Smal")
+        as_v_cp7_smal = st.number_input("Midden VOORAAN", min_value=0, max_value=pallets_cp7_smal, value=0, step=1, key=f"v_cp7_smal_{st.session_state.reset_id}")
+        as_a_cp7_smal = st.number_input("Midden ACHTERAAN", min_value=0, max_value=pallets_cp7_smal - as_v_cp7_smal, value=0, step=1, key=f"a_cp7_smal_{st.session_state.reset_id}")
+
 with col4:
     st.warning("**IBC (1000x1200)**")
     pallets_ibc = st.number_input("Totaal aantal IBC", min_value=0, value=0, step=1, key=f"ibc_{st.session_state.reset_id}")
-    as_v_ibc = st.number_input("Midden VOORAAN", min_value=0, value=0, step=1, key=f"v_ibc_{st.session_state.reset_id}")
-    as_a_ibc = st.number_input("Midden ACHTERAAN", min_value=0, value=0, step=1, key=f"a_ibc_{st.session_state.reset_id}")
-    if pallets_ibc > 0 and "IBC" not in st.session_state.klik_volgorde: st.session_state.klik_volgorde.append("IBC")
+    if pallets_ibc > 0:
+        if "IBC" not in st.session_state.klik_volgorde: st.session_state.klik_volgorde.append("IBC")
+        as_v_ibc = st.number_input("Midden VOORAAN", min_value=0, max_value=pallets_ibc, value=0, step=1, key=f"v_ibc_{st.session_state.reset_id}")
+        as_a_ibc = st.number_input("Midden ACHTERAAN", min_value=0, max_value=pallets_ibc - as_v_ibc, value=0, step=1, key=f"a_ibc_{st.session_state.reset_id}")
 
 hoofd_cp3 = max(0, pallets_cp3 - as_v_cp3 - as_a_cp3)
 hoofd_cp7 = max(0, pallets_cp7 - as_v_cp7 - as_a_cp7)

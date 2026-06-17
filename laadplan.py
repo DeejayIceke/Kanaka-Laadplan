@@ -80,7 +80,7 @@ if st.button("🗑️ Wis alle velden en container (Reset volledig naar 0)", typ
 if st.session_state.laad_blokken:
     st.write("### 📜 Huidige laadvolgorde (van kopschot links naar deur rechts):")
     for index, blok in enumerate(st.session_state.laad_blokken):
-        l_col, r_col = st.columns([6, 1])
+        l_col, r_col = st.columns([5, 1])
         with l_col:
             st.write(f"**Partij {index + 1}:** {blok['aantal']}x {blok['naam']}")
         with r_col:
@@ -149,7 +149,9 @@ totale_meters = 0
 # Teken elke rij pallets
 for rij in rijen:
     rij_lengte = max([item["L"] for item in rij])
-    is_alleen_cp7_smal = len(rij) == 1 and rij["naam_puur"] == "CP7 Smal"
+    
+    # GECORRIGEERD: Vraag het eerste item in de rij op via index [0]
+    is_alleen_cp7_smal = len(rij) == 1 and rij[0]["naam_puur"] == "CP7 Smal"
     
     for index, item in enumerate(rij):
         if is_alleen_cp7_smal:

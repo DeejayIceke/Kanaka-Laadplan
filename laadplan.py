@@ -5,7 +5,7 @@ import matplotlib.patches as patches
 
 st.set_page_config(page_title="Kaneka Visueel Laadplan", layout="wide")
 st.title("📦 Kaneka Visueel Laadplan Dashboard")
-st.write("Bepaal de exacte laadvolgorde door partijen stap voor stap achteraan aan te sluiten.")
+st.write("Vul direct de aantallen in. De app laadt de pallets automatisch in de volgorde van jouw invoer.")
 
 # 1. Container Keuze
 st.subheader("1. Kies het containertype")
@@ -26,9 +26,13 @@ else:
 
 st.info(f"Geselecteerde container laadruimte: **{max_lengte} mm** lang x **{max_breedte} mm** breed.")
 
-# Initialiseer de partijen-wachtrij in het geheugen
-if "laad_blokken" not in st.session_state:
-    st.session_state.laad_blokken = []
+# Initialiseer de dynamische geschiedenis in het geheugen
+if "laad_geschiedenis" not in st.session_state:
+    st.session_state.laad_geschiedenis = []
+if "vorige_aantallen" not in st.session_state:
+    st.session_state.vorige_aantallen = {"CP3": 0, "CP7": 0, "CP7 Smal": 0, "IBC": 0}
+if "reset_id" not in st.session_state:
+    st.session_state.reset_id = 0
 
 # Definieer de vaste productspecificaties
 product_info = {
@@ -38,84 +42,88 @@ product_info = {
     "IBC": {"lengte": 1000, "breedte": 1200, "kleur": "#f1c40f", "stapelbaar": False}
 }
 
-# 2. Invoer Pallets - Overzichtelijk naast elkaar
-st.subheader("2. Stel je partij samen en sluit achteraan aan")
+# 2. Invoer Pallets - Directe invoer naast elkaar
+st.subheader("2. Vul het aantal pallets in")
 col1, col2, col3, col4 = st.columns(4)
 
 with col1:
-    pallets_cp3 = st.number_input("Aantal CP3 (1140x1140)", min_value=0, value=0, step=1, key="tmp_cp3")
-    if pallets_cp3 > 0:
-        if st.button("Schuif CP3 achteraan ➔", key="add_cp3", use_container_width=True):
-            st.session_state.laad_blokken.append({"naam": "CP3", "aantal": pallets_cp3})
-            st.rerun()
-
+    pallets_cp3 = st.number_input("Aantal CP3 (1140x1140)", min_value=0, value=0, step=1, key=f"cp3_{st.session_state.reset_id}")
 with col2:
-    pallets_cp7 = st.number_input("Aantal CP7 (1400x1100)", min_value=0, value=0, step=1, key="tmp_cp7")
-    if pallets_cp7 > 0:
-        if st.button("Schuif CP7 achteraan ➔", key="add_cp7", use_container_width=True):
-            st.session_state.laad_blokken.append({"naam": "CP7", "aantal": pallets_cp7})
-            st.rerun()
-
+    pallets_cp7 = st.number_input("Aantal CP7 (1400x1100)", min_value=0, value=0, step=1, key=f"cp7_{st.session_state.reset_id}")
 with col3:
-    pallets_cp7_smal = st.number_input("Aantal CP7 Smal (1100x1400)", min_value=0, value=0, step=1, key="tmp_cp7_smal")
-    if pallets_cp7_smal > 0:
-        if st.button("Schuif CP7 Smal achteraan ➔", key="add_cp7_smal", use_container_width=True):
-            st.session_state.laad_blokken.append({"naam": "CP7 Smal", "aantal": pallets_cp7_smal})
-            st.rerun()
-
+    pallets_cp7_smal = st.number_input("Aantal CP7 Smal (1100x1400)", min_value=0, value=0, step=1, key=f"cp7_smal_{st.session_state.reset_id}")
 with col4:
-    pallets_ibc = st.number_input("Aantal IBC's (1000x1200)", min_value=0, value=0, step=1, key="tmp_ibc")
-    if pallets_ibc > 0:
-        if st.button("Schuif IBC achteraan ➔", key="add_ibc", use_container_width=True):
-            st.session_state.laad_blokken.append({"naam": "IBC", "aantal": pallets_ibc})
-            st.rerun()
+    pallets_ibc = st.number_input("Aantal IBC's (1000x1200)", min_value=0, value=0, step=1, key=f"ibc_{st.session_state.reset_id}")
 
-# De WISKNOP die de container volledig leegmaakt
-st.write("---")
-if st.button("🗑️ Wis alle velden en container (Reset volledig naar 0)", type="primary", use_container_width=True):
-    st.session_state.laad_blokken = []
+# Live detecteren welk invoerveld is veranderd en dit ACHTERAAN toevoegen
+actuele_aantallen = {"CP3": pallets_cp3, "CP7": pallets_cp7, "CP7 Smal": pallets_cp7_smal, "IBC": pallets_ibc}
+heeft_wijziging = False
+
+for art, aantal in actuele_aantallen.items():
+    vorige = st.session_state.vorige_aantallen.get(art, 0)
+    if aantal > vorige:
+        # Er zijn pallets bijgekomen -> voeg het verschil als nieuwe partij achteraan toe!
+        st.session_state.laad_geschiedenis.append({"naam": art, "aantal": aantal - vorige})
+        heeft_wijziging = True
+    elif aantal < vorige:
+        # Er zijn pallets afgehaald -> verminder de stappen in de geschiedenis van achter naar voren
+        verschil = vorige - aantal
+        for item in reversed(st.session_state.laad_geschiedenis):
+            if item["naam"] == art:
+                if item["aantal"] >= verschil:
+                    item["aantal"] -= verschil
+                    verschil = 0
+                    break
+                else:
+                    verschil -= item["aantal"]
+                    item["aantal"] = 0
+        # Schoon lege items op
+        st.session_state.laad_geschiedenis = [i for i in st.session_state.laad_geschiedenis if i["aantal"] > 0]
+        heeft_wijziging = True
+
+if heeft_wijziging:
+    st.session_state.vorige_aantallen = actuele_aantallen.copy()
     st.rerun()
 
-# Toon de actuele opgebouwde laadlijst onder elkaar met individuele verwijderoptie
-if st.session_state.laad_blokken:
-    st.write("### 📜 Huidige laadvolgorde (van kopschot links naar deur rechts):")
-    for index, blok in enumerate(st.session_state.laad_blokken):
-        l_col, r_col = st.columns([5, 1])
-        with l_col:
-            st.write(f"**Partij {index + 1}:** {blok['aantal']}x {blok['naam']}")
-        with r_col:
-            if st.button("❌", key=f"del_{index}"):
-                st.session_state.laad_blokken.pop(index)
-                st.rerun()
+# De WISKNOP die direct alle invoervelden en het plan leegmaakt
+st.write("---")
+if st.button("🗑️ Wis alle velden en container (Reset volledig naar 0)", type="primary", use_container_width=True):
+    st.session_state.laad_geschiedenis = []
+    st.session_state.vorige_aantallen = {"CP3": 0, "CP7": 0, "CP7 Smal": 0, "IBC": 0}
+    st.session_state.reset_id += 1
+    st.rerun()
 
-# 3. Logistieke Logica: Bouw de individuele vloerplaatsen op exact in volgorde van de blokken
+# 3. Logistieke Logica: Bouw de laadlijst op
 laad_lijst = []
-for blok in st.session_state.laad_blokken:
-    info = product_info[blok["naam"]]
+# Onthoud hoeveel pallets er per type al zijn verwerkt voor de juiste (1H/2H) labels
+teller_per_type = {"CP3": 0, "CP7": 0, "CP7 Smal": 0, "IBC": 0}
+
+for item in st.session_state.laad_geschiedenis:
+    info = product_info[item["naam"]]
     
     if info["stapelbaar"]:
-        vloerplaatsen = int(math.ceil(blok["aantal"] / 2))
+        vloerplaatsen = int(math.ceil(item["aantal"] / 2))
     else:
-        vloerplaatsen = int(blok["aantal"])
+        vloerplaatsen = int(item["aantal"])
         
-    overgebleven_pallets = blok["aantal"]
+    overgebleven = item["aantal"]
     
     for _ in range(vloerplaatsen):
         if info["stapelbaar"]:
-            hoogte_label = " (2H)" if overgebleven_pallets >= 2 else " (1H)"
-            overgebleven_pallets -= 2
+            hoogte_label = " (2H)" if overgebleven >= 2 else " (1H)"
+            overgebleven -= 2
         else:
             hoogte_label = ""
             
         laad_lijst.append({
-            "naam": f"{blok['naam']}{hoogte_label}", 
-            "naam_puur": blok["naam"],
+            "naam": f"{item['naam']}{hoogte_label}", 
+            "naam_puur": item["naam"],
             "L": info["lengte"], 
             "B": info["breedte"], 
             "kleur": info["kleur"]
         })
 
-# Rijen maken op basis van de containerbreedte (behoudt de exacte blokvolgorde)
+# Rijen maken op basis van de containerbreedte
 rijen = []
 tijdelijke_rij = []
 huidige_breedte_in_rij = 0
@@ -149,8 +157,6 @@ totale_meters = 0
 # Teken elke rij pallets
 for rij in rijen:
     rij_lengte = max([item["L"] for item in rij])
-    
-    # GECORRIGEERD: Vraag het eerste item in de rij op via index [0]
     is_alleen_cp7_smal = len(rij) == 1 and rij[0]["naam_puur"] == "CP7 Smal"
     
     for index, item in enumerate(rij):
@@ -171,7 +177,7 @@ restruimte = max_lengte - totale_meters
 # 5. Resultaat tonen
 st.subheader("3. Resultaat & Visuele Indeling")
 
-if st.session_state.laad_blokken:
+if st.session_state.laad_geschiedenis:
     if restruimte >= 0:
         st.success(f"Dit past! Je hebt nog {restruimte} mm over in de container.")
     else:
@@ -181,4 +187,4 @@ if st.session_state.laad_blokken:
     st.write(f"**Gebruikte lengte:** {totale_meters} mm van de {max_lengte} mm.")
     st.write("💡 **Legenda:** [X] Blauw = CP3 | [X] Groen = CP7 | [X] Paars = CP7 Smal | [X] Geel = IBC")
 else:
-    st.info("De container is nog leeg. Stel hierboven een partij samen en klik op 'Schuif achteraan' om te laden.")
+    st.info("De container is nog leeg. Gebruik de + en - knoppen bij de aantallen om direct te laden.")

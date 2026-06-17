@@ -2,8 +2,10 @@ import streamlit as st, math, matplotlib.pyplot as plt, matplotlib.patches as pa
 st.set_page_config(page_title="Fons Laadplan", layout="wide")
 st.markdown("<style>.block-container { padding-top: 1rem !important; } div[data-testid='stNotification'] { background-color: #9b59b6 !important; color: white !important; }</style>", unsafe_allow_html=True)
 
-st.title("Fons Laadplan 1.0 🚛")
+# Titel zonder 1.0
+st.title("Fons Laadplan 🚛")
 
+# Maten netjes direct tussen haakjes in de selectbox
 container_type = st.selectbox(
     "1. Kies container:", 
     ["45ft Container (13550 x 2426 mm)", "40ft Container (12030 x 2350 mm)", "20ft Container (5898 x 2350 mm)"]
@@ -29,7 +31,8 @@ product_info = {
     "IBC": {"lengte": 1000, "breedte": 1200, "kleur": "#f1c40f", "stapelbaar": False}
 }
 
-col_titel, col_wis = st.columns()
+# GECORRIGEERD: Aantal kolommen (3:1 verhouding) ingevuld zodat Streamlit niet meer crasht!
+col_titel, col_wis = st.columns([3, 1])
 with col_titel:
     st.write("### 2. Vul aantal pallets in:")
 with col_wis:
@@ -120,7 +123,7 @@ ax.set_xlim(0, max_lengte); ax.set_ylim(0, max_breedte); ax.set_aspect('equal', 
 container_border = patches.Rectangle((0, 0), max_lengte, max_breedte, linewidth=2, edgecolor='black', facecolor='none')
 ax.add_patch(container_border)
 
-# SLIMME FIX: Volledig onafhankelijke tracking per zijkant (onderkant vs bovenkant)
+# Onafhankelijke rits-tracking per zijkant (bovenkant vs onderkant)
 x_onder = 0
 x_boven = 0
 ibc_paar_teller = 0
@@ -129,7 +132,6 @@ idx = 0
 while idx < len(laad_lijst):
     item = laad_lijst[idx]
     
-    # Aslast midden of CP7 Smal trekken beide lijnen direct gelijk naar het verste punt
     if item["force_midden"] or item["naam_puur"] == "CP7 Smal":
         start_x = max(x_onder, x_boven)
         vulling_kleur = "#e74c3c" if (start_x + item["L"] > max_lengte) else item["kleur"]
@@ -141,7 +143,6 @@ while idx < len(laad_lijst):
         idx += 1
         continue
         
-    # Gevlochten IBC logica in een smalle container (40ft/20ft)
     if max_breedte == 2350 and item["naam_puur"] == "IBC":
         heeft_partner = (idx + 1 < len(laad_lijst) and laad_lijst[idx+1]["naam_puur"] == "IBC" and not laad_lijst[idx+1]["force_midden"])
         if heeft_partner:
@@ -171,16 +172,14 @@ while idx < len(laad_lijst):
                 x_onder, x_boven = x_onder + 1200, x_boven + 1000
             ibc_paar_teller += 1; idx += 2; continue
 
-    # DYNAMISCH AANSLUITEN: De pallet kiest slim de kant met de meeste resterende ruimte (kortste X-as)
+    # Rits-logica: Pallet sluit strak aan op de zijde met de meeste vrije ruimte
     if x_onder <= x_boven:
-        # Onderkant loopt achter, dus plaats de pallet onderaan strak tegen de vorige aan!
         vulling_kleur = "#e74c3c" if (x_onder + item["L"] > max_lengte) else item["kleur"]
         rect = patches.Rectangle((x_onder, 20), item["L"], item["B"], linewidth=1, edgecolor='white', facecolor=vulling_kleur, alpha=0.8)
         ax.add_patch(rect)
         ax.text(x_onder + (item["L"]/2), 20 + (item["B"]/2), item["naam"], color="black", weight="bold", ha="center", va="center", fontsize=7)
         x_onder += item["L"]
     else:
-        # Bovenkant loopt achter, dus plaats de pallet bovenaan strak tegen de vorige aan!
         vulling_kleur = "#e74c3c" if (x_boven + item["L"] > max_lengte) else item["kleur"]
         rect = patches.Rectangle((x_boven, max_breedte - item["B"] - 20), item["L"], item["B"], linewidth=1, edgecolor='white', facecolor=vulling_kleur, alpha=0.8)
         ax.add_patch(rect)

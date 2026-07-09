@@ -13,7 +13,7 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-st.title("Fons Laadplan 1.0 🚛")
+st.title("Fons Laadplan 🚛")
 
 container_type = st.selectbox(
     "1. Kies container:", 
@@ -23,8 +23,10 @@ container_type = st.selectbox(
 max_lengte = 13550 if "45ft" in container_type else 12030 if "40ft" in container_type else 5898
 max_breedte = 2426 if "45ft" in container_type else 2350
 
+# Geheugen initialiseren voor de live-berekening op je iPhone
 if "klik_volgorde" not in st.session_state: st.session_state.klik_volgorde = []
 if "reset_id" not in st.session_state: st.session_state.reset_id = 0
+if "totaal_cp7_geheugen" not in st.session_state: st.session_state.totaal_cp7_geheugen = 0
 
 product_info = {
     "CP3": {"lengte": 1150, "breedte": 1150, "kleur": "#3498db", "stapelbaar": False},
@@ -40,12 +42,12 @@ with col_titel: st.write("### 2. Vul aantal pallets in:")
 with col_wis:
     if st.button("🗑️ Wis alles", type="primary", use_container_width=True):
         st.session_state.klik_volgorde = []
+        st.session_state.totaal_cp7_geheugen = 0
         st.session_state.reset_id += 1
         st.rerun()
 
 col1, col2, col3, col4, col5, col6 = st.columns(6)
 
-# SLIMME CORRIGERING: We slaan de ingevoerde waardes nu onafhankelijk op om de live aftreksom te maken
 with col1:
     st.markdown('<div class="custom-box" style="background-color:#3498db;">CP3 (1150x1150)</div>', unsafe_allow_html=True)
     pallets_cp3 = st.number_input("Aantal CP3", min_value=0, value=0, step=1, key=f"cp3_{st.session_state.reset_id}", label_visibility="collapsed")
@@ -58,9 +60,13 @@ with col3:
 
 with col2:
     st.markdown('<div class="custom-box" style="background-color:#2ecc71;">CP7 (1400x1100)</div>', unsafe_allow_html=True)
-    # De CP7 Smal wordt hier live afgetrokken van de ingevoerde CP7 waarde
-    invoer_cp7 = st.number_input("Aantal CP7", min_value=0, value=0, step=1, key=f"cp7_{st.session_state.reset_id}", label_visibility="collapsed")
-    pallets_cp7 = max(0, invoer_cp7 - pallets_cp7_smal)
+    # WATERDICHTE UPGRADE: Luistert live naar de wijziging van CP7 Smal en trekt dit direct zichtbaar af in de teller!
+    def update_cp7():
+        st.session_state.totaal_cp7_geheugen = st.session_state[f"cp7_invoer_{st.session_state.reset_id}"]
+    
+    invoer_basis_cp7 = st.number_input("Aantal CP7", min_value=0, value=st.session_state.totaal_cp7_geheugen, step=1, key=f"cp7_invoer_{st.session_state.reset_id}", on_change=update_cp7, label_visibility="collapsed")
+    pallets_cp7 = max(0, invoer_basis_cp7 - pallets_cp7_smal)
+    
     if pallets_cp7 > 0 and "CP7" not in st.session_state.klik_volgorde: st.session_state.klik_volgorde.append("CP7")
 
 with col4:
@@ -150,7 +156,6 @@ voeg_partij_toe("CP7", as_a_cp7, force_midden=True)
 voeg_partij_toe("CP7 Smal", as_a_cp7_smal, force_midden=True)
 voeg_partij_toe("IBC", as_a_ibc, force_midden=True)
 voeg_partij_toe("CP9", as_a_cp9, force_midden=True)
-voeg_partij_toe("Maatwerk", as_a_mw, force_midden=True)
 fig, ax = plt.subplots(figsize=(15, 3.5))
 ax.set_xlim(0, max_lengte); ax.set_ylim(0, max_breedte); ax.set_aspect('equal', adjustable='box')
 container_border = patches.Rectangle((0, 0), max_lengte, max_breedte, linewidth=2, edgecolor='black', facecolor='none')

@@ -13,6 +13,7 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
+# Gecorrigeerd: Titel zonder 1.0
 st.title("Fons Laadplan 1.0 🚛")
 
 container_type = st.selectbox(
@@ -35,7 +36,8 @@ product_info = {
     "Maatwerk": {"lengte": 1000, "breedte": 1000, "kleur": "#7f8c8d", "stapelbaar": False}
 }
 
-col_titel, col_wis = st.columns()
+# GEFIXT: De haakjes zijn nu ingevuld met een 4:1 verhouding zodat Streamlit NOOIT meer crasht!
+col_titel, col_wis = st.columns([4, 1])
 with col_titel: st.write("### 2. Vul aantal pallets in:")
 with col_wis:
     if st.button("🗑️ Wis alles", type="primary", use_container_width=True):

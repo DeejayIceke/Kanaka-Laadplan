@@ -13,7 +13,7 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-st.title("Fons Laadplan 1.0 🚛")
+st.title("Fons Laadplan 🚛")
 
 container_type = st.selectbox(
     "1. Kies container:", 
@@ -37,7 +37,8 @@ product_info = {
     "Maatwerk": {"lengte": 1000, "breedte": 1000, "kleur": "#7f8c8d", "stapelbaar": False}
 }
 
-col_titel, col_wis = st.columns()
+# WATERDICHT CORRIGERING: De kolommen zijn nu hard ingesteld op een 4:1 verhouding!
+col_titel, col_wis = st.columns([4, 1])
 with col_titel: st.write("### 2. Vul aantal pallets in:")
 with col_wis:
     if st.button("🗑️ Wis alles", type="primary", use_container_width=True):
@@ -132,15 +133,7 @@ if pallets_cp3 + pallets_cp7 + pallets_cp7_smal + pallets_ibc + pallets_cp9 + pa
                 as_v_mw = st.number_input("MW VOR", min_value=0, max_value=pallets_mw, value=0, step=1, key=f"v_mw_{st.session_state.reset_id}")
                 as_a_mw = st.number_input("MW ACH", min_value=0, max_value=pallets_mw - as_v_mw, value=0, step=1, key=f"a_mw_{st.session_state.reset_id}")
 
-hoofd_cp3 = max(0, pallets_cp3 - as_v_cp3 - as_a_cp3)
-hoofd_cp7 = max(0, pallets_cp7 - as_v_cp7 - as_a_cp7)
-hoofd_cp7_smal = max(0, pallets_cp7_smal - as_v_cp7_smal - as_a_cp7_smal)
-hoofd_ibc = max(0, pallets_ibc - as_v_ibc - as_a_ibc)
-hoofd_cp9 = max(0, pallets_cp9 - as_v_cp9 - as_a_cp9)
-hoofd_mw = max(0, pallets_mw - as_v_mw - as_a_mw)
-
-# GEFIXT: pallets_cp7 en hoofd_cp7 zijn nu correct gekoppeld zodat de NameError verdwijnt!
-actuele_aantallen = {"CP3": hoofd_cp3, "CP7": hoofd_cp7, "CP7 Smal": hoofd_cp7_smal, "IBC": hoofd_ibc, "CP9": hoofd_cp9, "Maatwerk": hoofd_mw}
+actuele_aantallen = {"CP3": pallets_cp3, "CP7": pallets_cp7, "CP7 Smal": pallets_cp7_smal, "IBC": pallets_ibc, "CP9": pallets_cp9, "Maatwerk": pallets_mw}
 
 laad_lijst = []
 def voeg_partij_toe(art_naam, aantal, force_midden):
@@ -156,6 +149,11 @@ def voeg_partij_toe(art_naam, aantal, force_midden):
 voeg_partij_toe("CP3", as_v_cp3, force_midden=True)
 voeg_partij_toe("CP7", as_v_cp7, force_midden=True)
 voeg_partij_toe("CP7 Smal", as_v_cp7_smal, force_midden=True)
+voeg_partij_toe("IBC", as_v_ibc, force_midden=True)
+voeg_partij_toe("CP9", as_v_cp9, force_midden=True)
+voeg_partij_toe("Maatwerk", as_v_mw, force_midden=True)
+for art_naam in st.session_state.klik_volgorde:
+    if art_naam in actuele_aantallen: voeg_partij_toe(art_naam, actuele_aantallen[art_naam], force_midden=False)
 fig, ax = plt.subplots(figsize=(15, 3.5))
 ax.set_xlim(0, max_lengte); ax.set_ylim(0, max_breedte); ax.set_aspect('equal', adjustable='box')
 container_border = patches.Rectangle((0, 0), max_lengte, max_breedte, linewidth=2, edgecolor='black', facecolor='none')

@@ -13,7 +13,7 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-st.title("Fons Laadplan 🚛")
+st.title("Fons Laadplan 1.0 🚛")
 
 container_type = st.selectbox(
     "1. Kies container:", 
@@ -26,7 +26,6 @@ max_breedte = 2426 if "45ft" in container_type else 2350
 if "klik_volgorde" not in st.session_state: st.session_state.klik_volgorde = []
 if "reset_id" not in st.session_state: st.session_state.reset_id = 0
 
-# CP7 Smal is hier verwijderd uit de hoofdproducten, we laden hem dynamisch via de aslast
 product_info = {
     "CP3": {"lengte": 1150, "breedte": 1150, "kleur": "#3498db", "stapelbaar": False},
     "CP7": {"lengte": 1400, "breedte": 1100, "kleur": "#2ecc71", "stapelbaar": True},
@@ -35,7 +34,6 @@ product_info = {
     "Maatwerk": {"lengte": 1000, "breedte": 1000, "kleur": "#7f8c8d", "stapelbaar": False}
 }
 
-# DIRECT GEFIXT: De haakjes bevatten nu een verplichte 2 zodat Streamlit NOOIT meer crasht!
 col_titel, col_wis = st.columns(2)
 with col_titel: st.write("### 2. Vul aantal pallets in:")
 with col_wis:
@@ -44,7 +42,6 @@ with col_wis:
         st.session_state.reset_id += 1
         st.rerun()
 
-# Terug naar 5 strakke hoofd-kolommen zonder de losse CP7 Smal knop
 col1, col2, col3, col4, col5 = st.columns(5)
 
 with col1:
@@ -117,8 +114,7 @@ if pallets_cp3 + pallets_cp7_totaal + pallets_ibc + pallets_cp9 + pallets_mw > 0
 hoofd_cp7 = max(0, pallets_cp7_totaal - as_v_cp7 - as_a_cp7)
 if pallets_cp7_totaal > 0 and "CP7" not in st.session_state.klik_volgorde: st.session_state.klik_volgorde.append("CP7")
 
-with col2:
-    if pallets_cp7_totaal > 0: st.write(f"➡️ **Gewone CP7 over:** {hoofd_cp7}")
+# INFO-TEKST IS HIER VOLLEDIG VERWIJDERD VOOR MEER RUIMTE
 
 hoofd_cp3 = max(0, pallets_cp3 - as_v_cp3 - as_a_cp3)
 hoofd_ibc = max(0, pallets_ibc - as_v_ibc - as_a_ibc)

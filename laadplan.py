@@ -13,7 +13,6 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# Gecorrigeerd: Titel zonder 1.0
 st.title("Fons Laadplan 1.0 🚛")
 
 container_type = st.selectbox(
@@ -36,7 +35,6 @@ product_info = {
     "Maatwerk": {"lengte": 1000, "breedte": 1000, "kleur": "#7f8c8d", "stapelbaar": False}
 }
 
-# GEFIXT: De haakjes zijn nu ingevuld met een 4:1 verhouding zodat Streamlit NOOIT meer crasht!
 col_titel, col_wis = st.columns([4, 1])
 with col_titel: st.write("### 2. Vul aantal pallets in:")
 with col_wis:
@@ -47,26 +45,34 @@ with col_wis:
 
 col1, col2, col3, col4, col5, col6 = st.columns(6)
 
+# SLIMME CORRIGERING: We slaan de ingevoerde waardes nu onafhankelijk op om de live aftreksom te maken
 with col1:
     st.markdown('<div class="custom-box" style="background-color:#3498db;">CP3 (1150x1150)</div>', unsafe_allow_html=True)
     pallets_cp3 = st.number_input("Aantal CP3", min_value=0, value=0, step=1, key=f"cp3_{st.session_state.reset_id}", label_visibility="collapsed")
     if pallets_cp3 > 0 and "CP3" not in st.session_state.klik_volgorde: st.session_state.klik_volgorde.append("CP3")
-with col2:
-    st.markdown('<div class="custom-box" style="background-color:#2ecc71;">CP7 (1400x1100)</div>', unsafe_allow_html=True)
-    pallets_cp7 = st.number_input("Aantal CP7", min_value=0, value=0, step=1, key=f"cp7_{st.session_state.reset_id}", label_visibility="collapsed")
-    if pallets_cp7 > 0 and "CP7" not in st.session_state.klik_volgorde: st.session_state.klik_volgorde.append("CP7")
+
 with col3:
     st.markdown('<div class="custom-box" style="background-color:#9b59b6;">CP7 Smal (1100x1400)</div>', unsafe_allow_html=True)
     pallets_cp7_smal = st.number_input("Aantal Smal", min_value=0, value=0, step=1, key=f"cp7_smal_{st.session_state.reset_id}", label_visibility="collapsed")
     if pallets_cp7_smal > 0 and "CP7 Smal" not in st.session_state.klik_volgorde: st.session_state.klik_volgorde.append("CP7 Smal")
+
+with col2:
+    st.markdown('<div class="custom-box" style="background-color:#2ecc71;">CP7 (1400x1100)</div>', unsafe_allow_html=True)
+    # De CP7 Smal wordt hier live afgetrokken van de ingevoerde CP7 waarde
+    invoer_cp7 = st.number_input("Aantal CP7", min_value=0, value=0, step=1, key=f"cp7_{st.session_state.reset_id}", label_visibility="collapsed")
+    pallets_cp7 = max(0, invoer_cp7 - pallets_cp7_smal)
+    if pallets_cp7 > 0 and "CP7" not in st.session_state.klik_volgorde: st.session_state.klik_volgorde.append("CP7")
+
 with col4:
     st.markdown('<div class="custom-box" style="background-color:#f1c40f; color:black;">IBC (1000x1200)</div>', unsafe_allow_html=True)
     pallets_ibc = st.number_input("Aantal IBC", min_value=0, value=0, step=1, key=f"ibc_{st.session_state.reset_id}", label_visibility="collapsed")
     if pallets_ibc > 0 and "IBC" not in st.session_state.klik_volgorde: st.session_state.klik_volgorde.append("IBC")
+
 with col5:
     st.markdown('<div class="custom-box" style="background-color:#e67e22;">CP9 (1150x1150)</div>', unsafe_allow_html=True)
     pallets_cp9 = st.number_input("Aantal CP9", min_value=0, value=0, step=1, key=f"cp9_{st.session_state.reset_id}", label_visibility="collapsed")
     if pallets_cp9 > 0 and "CP9" not in st.session_state.klik_volgorde: st.session_state.klik_volgorde.append("CP9")
+
 with col6:
     st.markdown('<div class="custom-box" style="background-color:#7f8c8d;">Maatwerk 📐</div>', unsafe_allow_html=True)
     pallets_mw = st.number_input("Aantal Maatwerk", min_value=0, value=0, step=1, key=f"mw_{st.session_state.reset_id}", label_visibility="collapsed")

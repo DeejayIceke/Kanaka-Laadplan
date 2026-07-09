@@ -13,7 +13,7 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-st.title("Fons Laadplan 1.0 100% 🚛")
+st.title("Fons Laadplan 🚛")
 
 container_type = st.selectbox(
     "1. Kies container:", 
@@ -35,7 +35,8 @@ product_info = {
     "Maatwerk": {"lengte": 1000, "breedte": 1000, "kleur": "#7f8c8d", "stapelbaar": False}
 }
 
-col_titel, col_wis = st.columns()
+# DIRECT GEFIXT: De haakjes bevatten nu een verplichte 2 zodat Streamlit NOOIT meer crasht!
+col_titel, col_wis = st.columns(2)
 with col_titel: st.write("### 2. Vul aantal pallets in:")
 with col_wis:
     if st.button("🗑️ Wis alles", type="primary", use_container_width=True):
@@ -43,7 +44,7 @@ with col_wis:
         st.session_state.reset_id += 1
         st.rerun()
 
-# Terug naar 5 strakke hoofdचारी kolommen
+# Terug naar 5 strakke hoofd-kolommen zonder de losse CP7 Smal knop
 col1, col2, col3, col4, col5 = st.columns(5)
 
 with col1:
@@ -81,7 +82,6 @@ as_v_ibc, as_a_ibc = 0, 0
 as_v_cp9, as_a_cp9 = 0, 0
 as_v_mw, as_a_mw = 0, 0
 
-# Richting-geheugen voor aslast CP7
 richting_v_cp7 = "Lang (1400x1100)"
 richting_a_cp7 = "Lang (1400x1100)"
 
@@ -131,7 +131,7 @@ def voeg_partij_toe_aslast(art_naam, aantal, richting):
     if aantal > 0:
         info = product_info[art_naam].copy()
         if art_naam == "CP7" and "Smal" in richting:
-            info["lengte"], info["breedte"], info["kleur"] = 1100, 1400, "#9b59b6" # Laadt direct paars en smal!
+            info["lengte"], info["breedte"], info["kleur"] = 1100, 1400, "#9b59b6"
         
         vloer = int(math.ceil(aantal / 2)) if info["stapelbaar"] else int(aantal)
         overgebleven = aantal
@@ -150,7 +150,6 @@ def voeg_partij_toe(art_naam, aantal):
             overgebleven -= 2
             laad_lijst.append({"naam": f"{art_naam}{h_label}", "naam_puur": art_naam, "L": info["lengte"], "B": info["breedte"], "kleur": info["kleur"], "force_midden": False})
 
-# Bouw de voorkant aslast op met de gekozen richting
 voeg_partij_toe_aslast("CP3", as_v_cp3, "Lang")
 voeg_partij_toe_aslast("CP7", as_v_cp7, richting_v_cp7)
 voeg_partij_toe_aslast("IBC", as_v_ibc, "Lang")
@@ -160,7 +159,6 @@ voeg_partij_toe_aslast("Maatwerk", as_v_mw, "Lang")
 for art_naam in st.session_state.klik_volgorde:
     if art_naam in actuele_aantallen: voeg_partij_toe(art_naam, actuele_aantallen[art_naam])
 
-# Bouw de achterkant aslast op met de gekozen richting
 voeg_partij_toe_aslast("CP3", as_a_cp3, "Lang")
 voeg_partij_toe_aslast("CP7", as_a_cp7, richting_a_cp7)
 voeg_partij_toe_aslast("IBC", as_a_ibc, "Lang")

@@ -13,7 +13,7 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-st.title("Fons Laadplan 🚛")
+st.title("Fons Laadplan 1.0 🚛")
 
 container_type = st.selectbox(
     "1. Kies container:", 
@@ -23,7 +23,6 @@ container_type = st.selectbox(
 max_lengte = 13550 if "45ft" in container_type else 12030 if "40ft" in container_type else 5898
 max_breedte = 2426 if "45ft" in container_type else 2350
 
-# Actief session state geheugen inrichten voor de live tellers
 if "klik_volgorde" not in st.session_state: st.session_state.klik_volgorde = []
 if "reset_id" not in st.session_state: st.session_state.reset_id = 0
 if "input_cp7" not in st.session_state: st.session_state.input_cp7 = 0
@@ -38,7 +37,7 @@ product_info = {
     "Maatwerk": {"lengte": 1000, "breedte": 1000, "kleur": "#7f8c8d", "stapelbaar": False}
 }
 
-col_titel, col_wis = st.columns([4, 1])
+col_titel, col_wis = st.columns()
 with col_titel: st.write("### 2. Vul aantal pallets in:")
 with col_wis:
     if st.button("🗑️ Wis alles", type="primary", use_container_width=True):
@@ -57,7 +56,6 @@ with col1:
 
 with col3:
     st.markdown('<div class="custom-box" style="background-color:#9b59b6;">CP7 Smal (1100x1400)</div>', unsafe_allow_html=True)
-    # Callback functie om live de gewone CP7-teller te verlagen als je Smal ophoogt
     def on_change_smal():
         st.session_state.input_smal = st.session_state[f"smal_actueel_{st.session_state.reset_id}"]
         if st.session_state.input_cp7 < st.session_state.input_smal:
@@ -68,13 +66,11 @@ with col3:
 
 with col2:
     st.markdown('<div class="custom-box" style="background-color:#2ecc71;">CP7 (1400x1100)</div>', unsafe_allow_html=True)
-    # Callback functie om de ingevoerde basiswaarde van CP7 op te slaan
     def on_change_cp7():
         st.session_state.input_cp7 = st.session_state[f"cp7_actueel_{st.session_state.reset_id}"]
 
     invoer_basis_cp7 = st.number_input("Aantal CP7", min_value=0, value=max(0, st.session_state.input_cp7 - st.session_state.input_smal), step=1, key=f"cp7_actueel_{st.session_state.reset_id}", on_change=on_change_cp7, label_visibility="collapsed")
     
-    # Als er handmatig op de knop geklikt is, updaten we het geheugen
     if st.session_state[f"cp7_actueel_{st.session_state.reset_id}"] != max(0, st.session_state.input_cp7 - st.session_state.input_smal):
         st.session_state.input_cp7 = st.session_state[f"cp7_actueel_{st.session_state.reset_id}"] + pallets_cp7_smal
 
@@ -136,7 +132,15 @@ if pallets_cp3 + pallets_cp7 + pallets_cp7_smal + pallets_ibc + pallets_cp9 + pa
                 as_v_mw = st.number_input("MW VOR", min_value=0, max_value=pallets_mw, value=0, step=1, key=f"v_mw_{st.session_state.reset_id}")
                 as_a_mw = st.number_input("MW ACH", min_value=0, max_value=pallets_mw - as_v_mw, value=0, step=1, key=f"a_mw_{st.session_state.reset_id}")
 
-actuele_aantallen = {"CP3": hoofd_cp3, "CP7": pallets_cp7, "CP7 Smal": hoofd_cp7_smal, "IBC": hoofd_ibc, "CP9": hoofd_cp9, "Maatwerk": hoofd_mw}
+hoofd_cp3 = max(0, pallets_cp3 - as_v_cp3 - as_a_cp3)
+hoofd_cp7 = max(0, pallets_cp7 - as_v_cp7 - as_a_cp7)
+hoofd_cp7_smal = max(0, pallets_cp7_smal - as_v_cp7_smal - as_a_cp7_smal)
+hoofd_ibc = max(0, pallets_ibc - as_v_ibc - as_a_ibc)
+hoofd_cp9 = max(0, pallets_cp9 - as_v_cp9 - as_a_cp9)
+hoofd_mw = max(0, pallets_mw - as_v_mw - as_a_mw)
+
+# GEFIXT: pallets_cp7 en hoofd_cp7 zijn nu correct gekoppeld zodat de NameError verdwijnt!
+actuele_aantallen = {"CP3": hoofd_cp3, "CP7": hoofd_cp7, "CP7 Smal": hoofd_cp7_smal, "IBC": hoofd_ibc, "CP9": hoofd_cp9, "Maatwerk": hoofd_mw}
 
 laad_lijst = []
 def voeg_partij_toe(art_naam, aantal, force_midden):
@@ -152,9 +156,6 @@ def voeg_partij_toe(art_naam, aantal, force_midden):
 voeg_partij_toe("CP3", as_v_cp3, force_midden=True)
 voeg_partij_toe("CP7", as_v_cp7, force_midden=True)
 voeg_partij_toe("CP7 Smal", as_v_cp7_smal, force_midden=True)
-voeg_partij_toe("IBC", as_v_ibc, force_midden=True)
-voeg_partij_toe("CP9", as_v_cp9, force_midden=True)
-voeg_partij_toe("Maatwerk", as_v_mw, force_midden=True)
 fig, ax = plt.subplots(figsize=(15, 3.5))
 ax.set_xlim(0, max_lengte); ax.set_ylim(0, max_breedte); ax.set_aspect('equal', adjustable='box')
 container_border = patches.Rectangle((0, 0), max_lengte, max_breedte, linewidth=2, edgecolor='black', facecolor='none')

@@ -189,7 +189,7 @@ while idx < len(laad_lijst):
         y_pos = (max_breedte - item["B"]) / 2
         rect = patches.Rectangle((start_x, y_pos), item["L"], item["B"], linewidth=1, edgecolor='white', facecolor=vulling_kleur, alpha=0.8)
         ax.add_patch(rect)
-        ax.text(start_x + (item["L"]/2), y_pos + (item["B"]/2), item["naam"], color="black", weight="bold", ha="center", va="center", fontsize=7)
+        ax.text(start_x + (item["L"]/2), y_pos + (item["B"]/2), item["naam"], color="black", weight="bold", ha="center", va="center", fontsize=11)
         x_onder, x_boven = start_x + item["L"], start_x + item["L"]
         idx += 1
         continue

@@ -159,9 +159,6 @@ def voeg_partij_toe(art_naam, aantal):
             overgebleven -= 2
             laad_lijst.append({"naam": f"{art_naam}{h_label}", "naam_puur": art_naam, "L": info["lengte"], "B": info["breedte"], "kleur": gekozen_kleur, "force_midden": False})
 
-                
-            overgebleven -= 2
-            laad_lijst.append({"naam": f"{art_naam}{h_label}", "naam_puur"
 voeg_partij_toe_aslast("CP3", as_v_cp3, "Lang")
 voeg_partij_toe_aslast("CP7", as_v_cp7, richting_v_cp7)
 voeg_partij_toe_aslast("IBC", as_v_ibc, "Lang")

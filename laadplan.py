@@ -116,8 +116,11 @@ if pallets_cp3 + pallets_cp7_totaal + pallets_ibc + pallets_cp9 + pallets_mw > 0
                 as_a_mw = st.number_input("MW ACH", min_value=0, max_value=pallets_mw - as_v_mw, value=0, step=1, key=f"a_mw_{st.session_state.reset_id}")
 
 hoofd_cp7 = max(0, pallets_cp7_totaal - as_v_cp7 - as_a_cp7)
-if pallets_cp7_totaal > 0 and "CP7" not in st.session_state.klik_volgorde:
-    st.session_state.klik_volgorde.append("CP7")
+if pallets_cp7_totaal > 0 and "CP7" not in st.session_state.klik_volgorde: st.session_state.klik_volgorde.append("CP7")
+
+with col2:
+    if pallets_cp7_totaal > 0: st.write(f"➡️ **Gewone CP7 over:** {hoofd_cp7}")
+# INFO-TEKST IS HIER VOLLEDIG VERWIJDERD VOOR MEER RUIMTE
 
 hoofd_cp3 = max(0, pallets_cp3 - as_v_cp3 - as_a_cp3)
 hoofd_ibc = max(0, pallets_ibc - as_v_ibc - as_a_ibc)
@@ -126,17 +129,16 @@ hoofd_mw = max(0, pallets_mw - as_v_mw - as_a_mw)
 actuele_aantallen = {"CP3": hoofd_cp3, "CP7": hoofd_cp7, "IBC": hoofd_ibc, "CP9": hoofd_cp9, "Maatwerk": hoofd_mw}
 
 laad_lijst = []
-
 def voeg_partij_toe_aslast(art_naam, aantal, richting):
     if aantal > 0:
         info = product_info[art_naam].copy()
         if art_naam == "CP7" and "Smal" in richting:
             info["lengte"], info["breedte"], info["kleur"] = 1100, 1400, "#9b59b6"
-        
+
         vloer = int(math.ceil(aantal / 2)) if info["stapelbaar"] else int(aantal)
         overgebleven = aantal
         for _ in range(vloer):
-            h_label = " (2H)" if info["stapelbaar"] and overgebleven >= 2 else " (1H)" if info["stapelbaar"] else ""
+            h_label = " (2H)" if info["stapelbaar"] and overgebleven >= 2 else (" (1H)" if info["stapelbaar"] else "")
             overgebleven -= 2
             laad_lijst.append({"naam": f"{art_naam}{h_label}", "naam_puur": art_naam, "L": info["lengte"], "B": info["breedte"], "kleur": info["kleur"], "force_midden": True})
 
@@ -146,7 +148,7 @@ def voeg_partij_toe(art_naam, aantal):
         vloer = int(math.ceil(aantal / 2)) if info["stapelbaar"] else int(aantal)
         overgebleven = aantal
         for _ in range(vloer):
-            h_label = " (2H)" if info["stapelbaar"] and overgebleven >= 2 else " (1H)" if info["stapelbaar"] else ""
+            h_label = " (2H)" if info["stapelbaar"] and overgebleven >= 2 else (" (1H)" if info["stapelbaar"] else "")
             overgebleven -= 2
             laad_lijst.append({"naam": f"{art_naam}{h_label}", "naam_puur": art_naam, "L": info["lengte"], "B": info["breedte"], "kleur": info["kleur"], "force_midden": False})
 
@@ -157,42 +159,31 @@ voeg_partij_toe_aslast("CP9", as_v_cp9, "Lang")
 voeg_partij_toe_aslast("Maatwerk", as_v_mw, "Lang")
 
 for art_naam in st.session_state.klik_volgorde:
-    if art_naam in actuele_aantallen:
-        voeg_partij_toe(art_naam, actuele_aantallen[art_naam])
+    if art_naam in actuele_aantallen: voeg_partij_toe(art_naam, actuele_aantallen[art_naam])
 
 voeg_partij_toe_aslast("CP3", as_a_cp3, "Lang")
 voeg_partij_toe_aslast("CP7", as_a_cp7, richting_a_cp7)
 voeg_partij_toe_aslast("IBC", as_a_ibc, "Lang")
 voeg_partij_toe_aslast("CP9", as_a_cp9, "Lang")
 voeg_partij_toe_aslast("Maatwerk", as_a_mw, "Lang")
-
 fig, ax = plt.subplots(figsize=(15, 3.5))
-ax.set_xlim(0, max_lengte)
-ax.set_ylim(0, max_breedte)
-ax.set_aspect('equal', adjustable='box')
-
+ax.set_xlim(0, max_lengte); ax.set_ylim(0, max_breedte); ax.set_aspect('equal', adjustable='box')
 container_border = patches.Rectangle((0, 0), max_lengte, max_breedte, linewidth=2, edgecolor='black', facecolor='none')
 ax.add_patch(container_border)
 
 x_onder, x_boven, ibc_paar_teller, idx = 0, 0, 0, 0
 while idx < len(laad_lijst):
     item = laad_lijst[idx]
-    
-    # Automatische berekening voor de maximaal haalbare lettergrootte per type pallet
-    # Korte namen krijgen extra ruimte, lange pallets schalen fors op tot max grootte 22
-    dynamic_fs = max(11, min(22, int(item["L"] / (8.5 * len(item["naam"])))))
-    
     if item["force_midden"]:
         start_x = max(x_onder, x_boven)
         vulling_kleur = "#e74c3c" if (start_x + item["L"] > max_lengte) else item["kleur"]
         y_pos = (max_breedte - item["B"]) / 2
         rect = patches.Rectangle((start_x, y_pos), item["L"], item["B"], linewidth=1, edgecolor='white', facecolor=vulling_kleur, alpha=0.8)
         ax.add_patch(rect)
-        ax.text(start_x + (item["L"]/2), y_pos + (item["B"]/2), item["naam"], color="black", weight="bold", ha="center", va="center", fontsize=dynamic_fs)
-        x_onder = x_boven = start_x + item["L"]
+        ax.text(start_x + (item["L"]/2), y_pos + (item["B"]/2), item["naam"], color="black", weight="bold", ha="center", va="center", fontsize=7)
+        x_onder, x_boven = start_x + item["L"], start_x + item["L"]
         idx += 1
         continue
-    
     if max_breedte == 2350 and item["naam_puur"] == "IBC":
         heeft_partner = (idx + 1 < len(laad_lijst) and laad_lijst[idx+1]["naam_puur"] == "IBC" and not laad_lijst[idx+1]["force_midden"])
         if heeft_partner:
@@ -201,30 +192,44 @@ while idx < len(laad_lijst):
                 vulling_kleur1 = "#e74c3c" if (x_pos_onder + 1000 > max_lengte) else item["kleur"]
                 rect1 = patches.Rectangle((x_pos_onder, 20), 1000, 1200, linewidth=1, edgecolor='white', facecolor=vulling_kleur1, alpha=0.8)
                 ax.add_patch(rect1)
-                ax.text(x_pos_onder + 500, 20 + 600, item["naam"], color="black", weight="bold", ha="center", va="center", fontsize=dynamic_fs)
-                x_onder = x_pos_onder + 1000
-                ibc_paar_teller += 1
-                idx += 1
-                continue
+                ax.text(x_pos_onder + 500, 20 + 600, "IBC (Breed)", color="black", weight="bold", ha="center", va="center", fontsize=7)
+                x_pos_boven = max(x_onder, x_boven) if ibc_paar_teller == 0 else x_boven
+                vulling_kleur2 = "#e74c3c" if (x_pos_boven + 1200 > max_lengte) else item["kleur"]
+                rect2 = patches.Rectangle((x_pos_boven, max_breedte - 1000 - 20), 1200, 1000, linewidth=1, edgecolor='white', facecolor=vulling_kleur2, alpha=0.8)
+                ax.add_patch(rect2)
+                ax.text(x_pos_boven + 600, max_breedte - 1000 - 20 + 500, "IBC (Lang)", color="black", weight="bold", ha="center", va="center", fontsize=7)
+                x_onder, x_boven = x_pos_onder + 1000, x_pos_boven + 1200
+            else:
+                vulling_kleur1 = "#e74c3c" if (x_onder + 1200 > max_lengte) else item["kleur"]
+                rect1 = patches.Rectangle((x_onder, 20), 1200, 1000, linewidth=1, edgecolor='white', facecolor=vulling_kleur1, alpha=0.8)
+                ax.add_patch(rect1)
+                ax.text(x_onder + 600, 20 + 500, "IBC (Lang)", color="black", weight="bold", ha="center", va="center", fontsize=7)
+                vulling_kleur2 = "#e74c3c" if (x_boven + 1000 > max_lengte) else item["kleur"]
+                rect2 = patches.Rectangle((x_boven, max_breedte - 1200 - 20), 1000, 1200, linewidth=1, edgecolor='white', facecolor=vulling_kleur2, alpha=0.8)
+                ax.add_patch(rect2)
+                ax.text(x_boven + 500, max_breedte - 1200 - 20 + 600, "IBC (Breed)", color="black", weight="bold", ha="center", va="center", fontsize=7)
+                x_onder, x_boven = x_onder + 1200, x_boven + 1000
+            ibc_paar_teller += 1; idx += 2; continue
+    if x_onder <= x_boven:
+        vulling_kleur = "#e74c3c" if (x_onder + item["L"] > max_lengte) else item["kleur"]
+        rect = patches.Rectangle((x_onder, 20), item["L"], item["B"], linewidth=1, edgecolor='white', facecolor=vulling_kleur, alpha=0.8)
+        ax.add_patch(rect)
+        ax.text(x_onder + (item["L"]/2), 20 + (item["B"]/2), item["naam"], color="black", weight="bold", ha="center", va="center", fontsize=7)
+        x_onder += item["L"]
     else:
         vulling_kleur = "#e74c3c" if (x_boven + item["L"] > max_lengte) else item["kleur"]
         rect = patches.Rectangle((x_boven, max_breedte - item["B"] - 20), item["L"], item["B"], linewidth=1, edgecolor='white', facecolor=vulling_kleur, alpha=0.8)
         ax.add_patch(rect)
-        ax.text(x_boven + (item["L"]/2), max_breedte - item["B"] - 20 + (item["B"]/2), item["naam"], color="black", weight="bold", ha="center", va="center", fontsize=dynamic_fs)
+        ax.text(x_boven + (item["L"]/2), max_breedte - item["B"] - 20 + (item["B"]/2), item["naam"], color="black", weight="bold", ha="center", va="center", fontsize=7)
         x_boven += item["L"]
-        idx += 1
-totale_meters = max(x_onder, x_boven)
-restruimte = max_lengte - totale_meters
-st.write("### 3. Plan:")
+    idx += 1
 
+totale_meters = max(x_onder, x_boven); restruimte = max_lengte - totale_meters
+st.write("### 3. Plan:")
 if pallets_cp3+pallets_cp7_totaal+pallets_ibc+pallets_cp9+pallets_mw > 0 or as_v_cp3+as_v_cp7+as_v_ibc+as_v_cp9+as_v_mw+as_a_cp3+as_a_cp7+as_a_ibc+as_a_cp9+as_a_mw > 0:
-    if restruimte >= 0:
-        st.success(f"✅ Past! Nog {restruimte} mm over.")
-    else:
-        st.error(f"❌ Past NIET! {abs(restruimte)} mm tekort.")
+    if restruimte >= 0: st.success(f"✅ Past! Nog {restruimte} mm over.")
+    else: st.error(f"❌ Past NIET! {abs(restruimte)} mm tekort.")
     st.pyplot(fig)
     st.write(f"**Geladen:** {totale_meters} mm van {max_lengte} mm.")
     st.write("💡 **Legenda:** [X] Blauw=CP3 | [X] Groen=CP7 (Lang) | [X] Paars=CP7 (Smal) | [X] Geel=IBC | [X] Oranje=CP9 | [X] Grijs=Maatwerk | [X] ROOD = Past Niet")
-else:
-    st.info("Container is leeg. Gebruik de + en - knoppen om te beginnen.")
-
+else: st.info("Container is leeg. Gebruik de + en - knoppen om te beginnen.")

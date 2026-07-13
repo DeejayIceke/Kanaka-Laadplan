@@ -201,29 +201,29 @@ while idx < len(laad_lijst):
                 vulling_kleur1 = "#e74c3c" if (x_pos_onder + 1000 > max_lengte) else item["kleur"]
                 rect1 = patches.Rectangle((x_pos_onder, 20), 1000, 1200, linewidth=1, edgecolor='white', facecolor=vulling_kleur1, alpha=0.8)
                 ax.add_patch(rect1)
-                ax.text(x_pos_onder + 500, 20 + 600, "IBC (Breed)", color="black", weight="bold", ha="center", va="center", fontsize=7)
+                ax.text(x_pos_onder + 500, 20 + 600, "IBC (Breed)", color="black", weight="bold", ha="center", va="center", fontsize=11)
                 x_pos_boven = max(x_onder, x_boven) if ibc_paar_teller == 0 else x_boven
                 vulling_kleur2 = "#e74c3c" if (x_pos_boven + 1200 > max_lengte) else item["kleur"]
                 rect2 = patches.Rectangle((x_pos_boven, max_breedte - 1000 - 20), 1200, 1000, linewidth=1, edgecolor='white', facecolor=vulling_kleur2, alpha=0.8)
                 ax.add_patch(rect2)
-                ax.text(x_pos_boven + 600, max_breedte - 1000 - 20 + 500, "IBC (Lang)", color="black", weight="bold", ha="center", va="center", fontsize=7)
+                ax.text(x_pos_boven + 600, max_breedte - 1000 - 20 + 500, "IBC (Lang)", color="black", weight="bold", ha="center", va="center", fontsize=11)
                 x_onder, x_boven = x_pos_onder + 1000, x_pos_boven + 1200
             else:
                 vulling_kleur1 = "#e74c3c" if (x_onder + 1200 > max_lengte) else item["kleur"]
                 rect1 = patches.Rectangle((x_onder, 20), 1200, 1000, linewidth=1, edgecolor='white', facecolor=vulling_kleur1, alpha=0.8)
                 ax.add_patch(rect1)
-                ax.text(x_onder + 600, 20 + 500, "IBC (Lang)", color="black", weight="bold", ha="center", va="center", fontsize=7)
+                ax.text(x_onder + 600, 20 + 500, "IBC (Lang)", color="black", weight="bold", ha="center", va="center", fontsize=11)
                 vulling_kleur2 = "#e74c3c" if (x_boven + 1000 > max_lengte) else item["kleur"]
                 rect2 = patches.Rectangle((x_boven, max_breedte - 1200 - 20), 1000, 1200, linewidth=1, edgecolor='white', facecolor=vulling_kleur2, alpha=0.8)
                 ax.add_patch(rect2)
-                ax.text(x_boven + 500, max_breedte - 1200 - 20 + 600, "IBC (Breed)", color="black", weight="bold", ha="center", va="center", fontsize=7)
+                ax.text(x_boven + 500, max_breedte - 1200 - 20 + 600, "IBC (Breed)", color="black", weight="bold", ha="center", va="center", fontsize=11)
                 x_onder, x_boven = x_onder + 1200, x_boven + 1000
             ibc_paar_teller += 1; idx += 2; continue
     if x_onder <= x_boven:
         vulling_kleur = "#e74c3c" if (x_onder + item["L"] > max_lengte) else item["kleur"]
         rect = patches.Rectangle((x_onder, 20), item["L"], item["B"], linewidth=1, edgecolor='white', facecolor=vulling_kleur, alpha=0.8)
         ax.add_patch(rect)
-        ax.text(x_onder + (item["L"]/2), 20 + (item["B"]/2), item["naam"], color="black", weight="bold", ha="center", va="center", fontsize=7)
+        ax.text(x_onder + (item["L"]/2), 20 + (item["B"]/2), item["naam"], color="black", weight="bold", ha="center", va="center", fontsize=11)
         x_onder += item["L"]
     else:
         vulling_kleur = "#e74c3c" if (x_boven + item["L"] > max_lengte) else item["kleur"]

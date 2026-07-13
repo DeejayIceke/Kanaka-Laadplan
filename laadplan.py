@@ -149,9 +149,15 @@ def voeg_partij_toe(art_naam, aantal):
         overgebleven = aantal
         for _ in range(vloer):
             h_label = " (2H)" if info["stapelbaar"] and overgebleven >= 2 else (" (1H)" if info["stapelbaar"] else "")
+            
+            # SLIMME FIX: Kies donkergroen voor 2H, anders de standaard kleur (lichtgroen voor 1H)
+            if art_naam == "CP7" and overgebleven >= 2:
+                gekozen_kleur = "#27ae60"  # Donkergroen
+            else:
+                gekozen_kleur = info["kleur"]  # Standaard (Lichtgroen)
+                
             overgebleven -= 2
-            laad_lijst.append({"naam": f"{art_naam}{h_label}", "naam_puur": art_naam, "L": info["lengte"], "B": info["breedte"], "kleur": info["kleur"], "force_midden": False})
-
+            laad_lijst.append({"naam": f"{art_naam}{h_label}", "naam_puur"
 voeg_partij_toe_aslast("CP3", as_v_cp3, "Lang")
 voeg_partij_toe_aslast("CP7", as_v_cp7, richting_v_cp7)
 voeg_partij_toe_aslast("IBC", as_v_ibc, "Lang")

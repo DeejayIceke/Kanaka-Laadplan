@@ -229,7 +229,7 @@ while idx < len(laad_lijst):
         vulling_kleur = "#e74c3c" if (x_boven + item["L"] > max_lengte) else item["kleur"]
         rect = patches.Rectangle((x_boven, max_breedte - item["B"] - 20), item["L"], item["B"], linewidth=1, edgecolor='white', facecolor=vulling_kleur, alpha=0.8)
         ax.add_patch(rect)
-        ax.text(x_boven + (item["L"]/2), max_breedte - item["B"] - 20 + (item["B"]/2), item["naam"], color="black", weight="bold", ha="center", va="center", fontsize=7)
+        ax.text(x_boven + (item["L"]/2), max_breedte - item["B"] - 20 + (item["B"]/2), item["naam"], color="black", weight="bold", ha="center", va="center", fontsize=11)
         x_boven += item["L"]
     idx += 1
 
